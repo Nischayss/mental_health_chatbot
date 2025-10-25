@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NISRA  - Your Mental Health Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <!-- Crisis Banner -->
+    <div class="crisis-banner" id="crisis-banner">
+        <div class="crisis-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Need immediate help? <a href="tel:988">Call 988</a> or <a href="tel:911">Emergency 911</a></span>
+            <button class="crisis-close" onclick="closeCrisis()">×</button>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-heart"></i>
+                    <h1>NISRA</h1>
+                </div>
+                <button class="sidebar-toggle" 
+                        onclick="toggleSidebar()" 
+                        aria-label="Toggle sidebar" 
+                        role="button"
+                        tabindex="0">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <h3>Quick Actions</h3>
+                    <button class="sidebar-btn" onclick="newChat()">
+                        <i class="fas fa-plus"></i>
+                        <span>New Conversation</span>
+                    </button>
+                    <button class="sidebar-btn" onclick="exportChat()">
+                        <i class="fas fa-download"></i>
+                        <span>Export Chat</span>
+                    </button>
+                </div>
+                <div class="sidebar-section">
+                    <h3>Relaxation Games</h3>
+                    <button class="sidebar-btn" onclick="openModal('games-modal')">
+                        <i class="fas fa-gamepad"></i>
+                        <span> Games</span>
+                    </button>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Wellness Tools</h3>
+                    <button class="sidebar-btn" onclick="openMoodTracker()">
+                        <i class="fas fa-smile"></i>
+                        <span>Mood Tracker</span>
+                    </button>
+                    <button class="sidebar-btn" onclick="openBreathingExercise()">
+                        <i class="fas fa-wind"></i>
+                        <span>Breathing Exercise</span>
+                    </button>
+                    <button class="sidebar-btn" onclick="openModal('exercise-modal')">
+                        <i class="fas fa-running"></i>
+                        <span>Exercise</span>
+                    </button>
+                    <button class="sidebar-btn" onclick="openResources()">
+                        <i class="fas fa-book-medical"></i>
+                        <span>Resources</span>
+                    </button>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Emergency Support</h3>
+                    <a href="tel:988" class="emergency-btn suicide-prevention">
+                        <i class="fas fa-phone"></i>
+                        <span>Suicide Prevention: 988</span>
+                    </a>
+                    <a href="tel:911" class="emergency-btn emergency">
+                        <i class="fas fa-ambulance"></i>
+                        <span>Emergency: 911</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+
+        <!-- Main Content -->
+        <div class="main-content">
+                        <!-- Floating Controls -->
+            <div class="floating-controls">
+                <button class="menu-btn" 
+                        onclick="toggleSidebar()" 
+                        aria-label="Toggle sidebar" 
+                        aria-expanded="true" 
+                        role="button"
+                        tabindex="0">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <button class="header-btn" onclick="toggleTheme()" title="Toggle theme">
+                    <i class="fas fa-moon" id="theme-icon"></i>
+                </button>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="chat-area">
+                <!-- Welcome Screen -->
+                <div class="welcome-screen" id="welcome-screen">
+                    <div class="welcome-content">
+                        <div class="welcome-icon">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <h2 id="greeting-time">Good Afternoon</h2>
+                        <p id="greeting-message">I'm NISRA. How can I help you today?</p>
+                        
+                        <div class="feature-cards">
+                            <div class="feature-card">
+                                <i class="fas fa-brain"></i>
+                                <h3>Training Model</h3>
+                                <p>Fine-tuned AI trained on mental health conversations</p>
+                            </div>
+                            <div class="feature-card">
+                                <i class="fas fa-user-md"></i>
+                                <h3>Professional Guidance</h3>
+                                <p>Evidence-based clinical mental health expertise</p>
+                            </div>
+                            <div class="feature-card">
+                                <i class="fas fa-globe"></i>
+                                <h3>Web Search</h3>
+                                <p>Current information from trusted sources (Perplexity-style)</p>
+                            </div>
+                            <div class="feature-card">
+                                <i class="fas fa-layer-group"></i>
+                                <h3>Mix All Methods</h3>
+                                <p>Comprehensive analysis combining all approaches</p>
+                            </div>
+                        </div>
+
+                        <div class="disclaimer">
+                            <div class="disclaimer-icon">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <div class="disclaimer-text">
+                                <strong>Important:</strong> I'm an AI assistant designed to provide general mental health support using multiple specialized methods. I'm not a replacement for professional mental health care. If you're experiencing a crisis or having thoughts of self-harm, please contact emergency services or a mental health professional immediately.
+                            </div>
+                        </div>
+
+                        <button class="start-chat-btn" onclick="startChat()">
+                            <i class="fas fa-comments"></i>
+                            Start Conversation
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages -->
+                <div class="chat-messages" id="chat-messages" style="display: none;"></div>
+
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typing-indicator" style="display: none;">
+                    <div class="typing-content">
+                        <div class="typing-avatar">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="typing-bubble">
+                            <div class="typing-text">NISRA  is thinking</div>
+                            <div class="typing-dots">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-area" id="chat-input-area" style="display: none;">
+                <div class="input-container">
+                    <div class="input-wrapper">
+
+                        
+                        <textarea 
+                            id="chat-input" 
+                            placeholder="Share what's on your mind..." 
+                            rows="1"
+                            maxlength="1000"
+                        ></textarea>
+                        <button class="mic-btn" id="mic-btn" onclick="toggleVoiceRecording()" title="Click to use voice">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button class="send-btn" id="send-btn" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="input-footer">
+                        <span class="input-hint">Press Enter to send • Shift+Enter for new line</span>
+                        <div class="response-type-selector">
+                            <div class="selector-label">Response Type:</div>
+                            <div class="response-options">
+                                <button class="response-option-btn active" data-type="training" onclick="setResponseType('training')" title="Fine-tuned AI model trained on mental health conversations">
+                                    <i class="fas fa-brain"></i>
+                                    <span>Training</span>
+                                </button>
+                                <button class="response-option-btn" data-type="professional" onclick="setResponseType('professional')" title="Evidence-based clinical guidance from psychology experts">
+                                    <i class="fas fa-user-md"></i>
+                                    <span>Professional</span>
+                                </button>
+                                <button class="response-option-btn" data-type="web" onclick="setResponseType('web')" title="Live search of trusted mental health websites (Perplexity-style)">
+                                    <i class="fas fa-globe"></i>
+                                    <span>Web Search</span>
+                                </button>
+                                <button class="response-option-btn" data-type="mix" onclick="setResponseType('mix')" title="Comprehensive analysis using all three approaches combined">
+                                    <i class="fas fa-layer-group"></i>
+                                    <span>Mix All 3</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closeAllModals()"></div>
+
+    <!-- Mood Tracker Modal -->
+    <div class="modal" id="mood-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-smile"></i> Mood Tracker</h3>
+                <button class="modal-close" onclick="closeModal('mood-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="mood-scale">
+                    <label>How are you feeling today?</label>
+                    <div class="mood-slider-container">
+                        <input type="range" id="mood-slider" min="1" max="10" value="5" oninput="updateMoodValue()">
+                        <div class="mood-labels">
+                            <span>Very Low</span>
+                            <span class="mood-value" id="mood-value">5</span>
+                            <span>Very High</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mood-note">
+                    <label>What's affecting your mood? (optional)</label>
+                    <textarea id="mood-note" placeholder="Share what's on your mind..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('mood-modal')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveMood()">Save Entry</button>
+            </div>
+        </div>
+    </div>
+    <!-- ============================================ -->
+<!-- ADD THESE 4 MODALS BEFORE YOUR EXISTING breathing-modal -->
+<!-- ============================================ -->
+
+<!-- 1. Selection: Breathing or Meditation -->
+<div class="modal" id="breathing-selection-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-spa"></i> Relaxation Techniques</h3>
+            <button class="modal-close" onclick="closeModal('breathing-selection-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center;">
+                <p style="font-size: 1.1rem; color: #667eea; margin-bottom: 24px;">Choose your method:</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 500px; margin: 0 auto;">
+                    <button onclick="startRelaxationType('breathing')" style="padding: 40px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <i class="fas fa-wind" style="font-size: 3rem; display: block; margin-bottom: 12px;"></i>
+                        <div style="font-size: 1.3rem; font-weight: 600;">Breathing</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 4px;">4-7-8 Exercise</div>
+                    </button>
+                    
+                    <button onclick="startRelaxationType('meditation')" style="padding: 40px 20px; background: linear-gradient(135deg, #48bb78, #38a169); color: white; border: none; border-radius: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <i class="fas fa-music" style="font-size: 3rem; display: block; margin-bottom: 12px;"></i>
+                        <div style="font-size: 1.3rem; font-weight: 600;">Meditation</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 4px;">Guided Audio</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Meditation Duration Selection -->
+<div class="modal" id="meditation-duration-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-clock"></i> Select Duration</h3>
+            <button class="modal-close" onclick="closeModal('meditation-duration-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center;">
+                <p style="font-size: 1.1rem; color: #667eea; margin-bottom: 24px;">How long would you like to meditate?</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 400px; margin: 0 auto;">
+                    <button onclick="selectMeditationDuration(2)" class="duration-btn">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: #667eea;">2</div>
+                        <div style="font-size: 0.9rem; color: #718096;">minutes</div>
+                    </button>
+                    
+                    <button onclick="selectMeditationDuration(5)" class="duration-btn">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: #667eea;">5</div>
+                        <div style="font-size: 0.9rem; color: #718096;">minutes</div>
+                    </button>
+                    
+                    <button onclick="selectMeditationDuration(10)" class="duration-btn">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: #667eea;">10</div>
+                        <div style="font-size: 0.9rem; color: #718096;">minutes</div>
+                    </button>
+                    
+                    <button onclick="selectMeditationDuration(15)" class="duration-btn">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: #667eea;">15</div>
+                        <div style="font-size: 0.9rem; color: #718096;">minutes</div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Meditation Track Selection -->
+<div class="modal" id="meditation-tracks-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-music"></i> Choose Sound</h3>
+            <button class="modal-close" onclick="closeModal('meditation-tracks-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center;">
+                <p style="font-size: 1.1rem; color: #667eea; margin-bottom: 24px;">Select your meditation sound:</p>
+                <div id="meditation-tracks-list" style="display: flex; flex-direction: column; gap: 12px; max-width: 500px; margin: 0 auto;">
+                    <!-- Tracks loaded by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Meditation Session (Playing) -->
+<div class="modal large" id="meditation-session-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-spa"></i> Meditation Session</h3>
+            <button class="modal-close" onclick="stopMeditation()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="meditation-session-content" style="text-align: center;">
+                <!-- Video Player -->
+                <div style="width: 100%; max-width: 500px; height: 280px; margin: 0 auto 24px; background: #f7fafc; border-radius: 16px; overflow: hidden;">
+                    <video id="meditation-video" 
+                        style="width: 100%; height: 100%; object-fit: contain;" 
+                           loop 
+                           muted>
+                        <source src="/static/videos/breathing/Music Meditation.mp4" type="video/mp4">
+                    </video>
+                </div>
+                
+                <!-- Timer Display -->
+                <div style="background: linear-gradient(135deg, #48bb78, #38a169); color: white; padding: 24px; border-radius: 16px; margin-bottom: 24px;">
+                    <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px;">Time Remaining</div>
+                    <div id="meditation-timer" style="font-size: 3rem; font-weight: 700;">5:00</div>
+                    <div id="meditation-track-name" style="font-size: 1.1rem; opacity: 0.9; margin-top: 8px;">Track Name</div>
+                </div>
+                
+                <!-- Controls -->
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="pause-meditation-btn" onclick="pauseMeditation()" class="btn btn-secondary">
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button onclick="stopMeditation()" class="btn btn-secondary">
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- KEEP YOUR EXISTING breathing-modal HERE - DON'T CHANGE IT -->
+
+    <!-- Breathing Exercise Modal -->
+    <div class="modal" id="breathing-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-wind"></i> Breathing Exercise</h3>
+                <button class="modal-close" onclick="closeModal('breathing-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="breathing-container">
+                    <div class="breathing-circle" id="breathing-circle">
+                        <div class="breathing-inner">
+                            <div class="breathing-instruction" id="breathing-instruction">Click Start</div>
+                            <div class="breathing-count" id="breathing-count">4</div>
+                        </div>
+                    </div>
+                    <div class="breathing-controls">
+                        <button class="btn btn-primary" id="start-breathing" onclick="startBreathing()">
+                            <i class="fas fa-play"></i> Start
+                        </button>
+                        <button class="btn btn-secondary" id="stop-breathing" onclick="stopBreathing()" style="display: none;">
+                            <i class="fas fa-stop"></i> Stop
+                        </button>
+                    </div>
+                    <div class="breathing-info">
+                        <h4>4-7-8 Breathing Technique</h4>
+                        <ul>
+                            <li>Inhale quietly through your nose for 4 seconds</li>
+                            <li>Hold your breath for 7 seconds</li>
+                            <li>Exhale completely through your mouth for 8 seconds</li>
+                            <li>Repeat the cycle 3-4 times</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Exercise Modal -->
+    <div class="modal large" id="exercise-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-running"></i> Physical Exercise</h3>
+                <button class="modal-close" onclick="closeModal('exercise-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center;">
+                    <p style="font-size: 1.1rem; color: #667eea; margin-bottom: 24px;">Choose your workout type:</p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 500px; margin: 0 auto 32px;">
+                        <button onclick="startExercise('yoga')" style="padding: 40px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <i class="fas fa-spa" style="font-size: 3rem; display: block; margin-bottom: 12px;"></i>
+                            <div style="font-size: 1.3rem; font-weight: 600;">Yoga</div>
+                            <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 4px;">Calm & Stretch</div>
+                        </button>
+                        
+                        <button onclick="startExercise('aerobics')" style="padding: 40px 20px; background: linear-gradient(135deg, #48bb78, #38a169); color: white; border: none; border-radius: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <i class="fas fa-heartbeat" style="font-size: 3rem; display: block; margin-bottom: 12px;"></i>
+                            <div style="font-size: 1.3rem; font-weight: 600;">Aerobics</div>
+                            <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 4px;">High Energy</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Games Selection Modal -->
+<div class="modal large" id="games-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-gamepad"></i> Relaxation Games</h3>
+            <button class="modal-close" onclick="closeModal('games-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center;">
+                <p style="font-size: 1.1rem; color: #667eea; margin-bottom: 24px;">Choose a game to relax and distract your mind:</p>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; max-width: 900px; margin: 0 auto 32px;">
+                    <button onclick="closeModal('games-modal'); openGame('memory');" style="padding: 40px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <i class="fas fa-th" style="font-size: 3rem; display: block; margin-bottom: 12px;"></i>
+                        <div style="font-size: 1.3rem; font-weight: 600;">Memory Match</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 4px;">Test Your Memory</div>
+                    </button>
+                    
+                    <button onclick="closeModal('games-modal'); openGame('colors');" style="padding: 40px 20px; background: linear-gradient(135deg, #48bb78, #38a169); color: white; border: none; border-radius: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <i class="fas fa-palette" style="font-size: 3rem; display: block; margin-bottom: 12px;"></i>
+                        <div style="font-size: 1.3rem; font-weight: 600;">Color Match</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 4px;">Match the Colors</div>
+                    </button>
+                    
+                    <button onclick="closeModal('games-modal'); openGame('scramble');" style="padding: 40px 20px; background: linear-gradient(135deg, #ed8936, #dd6b20); color: white; border: none; border-radius: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <i class="fas fa-spell-check" style="font-size: 3rem; display: block; margin-bottom: 12px;"></i>
+                        <div style="font-size: 1.3rem; font-weight: 600;">Word Scramble</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 4px;">Unscramble Words</div>
+                    </button>
+                    <button onclick="closeModal('games-modal'); openGame('dino');" style="padding: 40px 20px; background: linear-gradient(135deg, #9f7aea, #805ad5); color: white; border: none; border-radius: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <i class="fas fa-dragon" style="font-size: 3rem; display: block; margin-bottom: 12px;"></i>
+                        <div style="font-size: 1.3rem; font-weight: 600;">Dino Runner</div>
+                        <div style="font-size: 0.9rem; opacity: 0.9; margin-top: 4px;">Jump & Dodge</div>
+                    </button>
+                </div>
+                
+                <div style="background: #f7fafc; border-radius: 12px; padding: 20px; max-width: 600px; margin: 0 auto; text-align: left;">
+                    <h4 style="margin-bottom: 12px; color: #667eea;"><i class="fas fa-info-circle"></i> Benefits of Gaming for Mental Health:</h4>
+                    <ul style="color: #718096; line-height: 1.8;">
+                        <li>🧠 <strong>Memory Games</strong> improve cognitive function and focus</li>
+                        <li>🎨 <strong>Color Games</strong> enhance visual processing and mindfulness</li>
+                        <li>📝 <strong>Word Games</strong> boost vocabulary and mental agility</li>
+                        <li>🦖 <strong>Dino Runner</strong> improves reflexes and provides quick stress relief</li>
+                        <li>😌 All games provide healthy distraction from stress and anxiety</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Exercise Workout Modal -->
+    <div class="modal large" id="workout-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-running"></i> <span id="workout-title">Workout</span></h3>
+                <button class="modal-close" onclick="stopExercise()">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center;">
+                    <!-- Progress Bar -->
+                    <div style="background: #edf2f7; border-radius: 20px; height: 12px; margin-bottom: 24px; overflow: hidden;">
+                        <div id="exercise-progress" style="background: linear-gradient(90deg, #667eea, #48bb78); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                        <div>
+                            <div style="font-size: 0.9rem; color: #718096;">Exercise</div>
+                            <div style="font-size: 1.3rem; font-weight: 700; color: #667eea;"><span id="current-exercise">1</span>/<span id="total-exercises">5</span></div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.9rem; color: #718096;">Time Left</div>
+                            <div style="font-size: 1.3rem; font-weight: 700; color: #48bb78;"><span id="exercise-timer">30</span>s</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Animation Figure -->
+                    <!-- Video Player (shown when video available) -->
+                    <div id="exercise-video-player" style="width: 100%; max-width: 640px; height: 400px; margin: 0 auto 24px; background: #000; border-radius: 16px; overflow: hidden; display: none;">
+                        <video style="width: 100%; height: 100%; object-fit: contain;" controls autoplay loop muted>
+                            <source src="" type="video/mp4">
+                            Your browser does not support video playback.
+                        </video>
+                    </div>
+
+<!-- Animation Figure (fallback when no video) -->
+<div id="exercise-figure" style="width: 320px; height: 400px; margin: 0 auto 24px; position: relative; background: #f7fafc; border-radius: 16px; padding: 20px; display: none; opacity: 0; transition: opacity 0.3s;">                        <svg id="stick-figure" width="280" height="360" viewBox="0 0 280 360">
+                            <!-- Head -->
+                            <circle id="head" cx="140" cy="50" r="25" fill="#FFD4A3" stroke="#333" stroke-width="2" />
+                            <circle cx="133" cy="48" r="2" fill="#333" />
+                            <circle cx="147" cy="48" r="2" fill="#333" />
+                            <path d="M 133 55 Q 140 58 147 55" stroke="#333" stroke-width="1.5" fill="none" />
+                            
+                            <!-- Neck -->
+                            <line id="neck" x1="140" y1="75" x2="140" y2="95" stroke="#FFD4A3" stroke-width="12" stroke-linecap="round" />
+                            
+                            <!-- Torso (shirt) -->
+                            <rect id="torso" x="115" y="95" width="50" height="70" rx="8" fill="#4ECDC4" stroke="#333" stroke-width="2" />
+                            
+                            <!-- Shorts -->
+                            <rect id="shorts" x="120" y="165" width="40" height="35" rx="4" fill="#2C3E50" stroke="#333" stroke-width="2" />
+                            
+                            <!-- Left Upper Arm -->
+                            <line id="left-upper-arm" x1="115" y1="105" x2="85" y2="135" stroke="#FFD4A3" stroke-width="10" stroke-linecap="round" />
+                            <!-- Left Lower Arm -->
+                            <line id="left-lower-arm" x1="85" y1="135" x2="65" y2="170" stroke="#FFD4A3" stroke-width="9" stroke-linecap="round" />
+                            <!-- Left Hand -->
+                            <circle id="left-hand" cx="65" cy="170" r="6" fill="#FFD4A3" stroke="#333" stroke-width="1" />
+                            
+                            <!-- Right Upper Arm -->
+                            <line id="right-upper-arm" x1="165" y1="105" x2="195" y2="135" stroke="#FFD4A3" stroke-width="10" stroke-linecap="round" />
+                            <!-- Right Lower Arm -->
+                            <line id="right-lower-arm" x1="195" y1="135" x2="215" y2="170" stroke="#FFD4A3" stroke-width="9" stroke-linecap="round" />
+                            <!-- Right Hand -->
+                            <circle id="right-hand" cx="215" cy="170" r="6" fill="#FFD4A3" stroke="#333" stroke-width="1" />
+                            
+                            <!-- Left Upper Leg -->
+                            <line id="left-upper-leg" x1="130" y1="200" x2="115" y2="260" stroke="#FFD4A3" stroke-width="12" stroke-linecap="round" />
+                            <!-- Left Lower Leg -->
+                            <line id="left-lower-leg" x1="115" y1="260" x2="105" y2="320" stroke="#FFD4A3" stroke-width="11" stroke-linecap="round" />
+                            <!-- Left Shoe -->
+                            <ellipse id="left-shoe" cx="105" cy="328" rx="12" ry="8" fill="#555" stroke="#333" stroke-width="1" />
+                            
+                            <!-- Right Upper Leg -->
+                            <line id="right-upper-leg" x1="150" y1="200" x2="165" y2="260" stroke="#FFD4A3" stroke-width="12" stroke-linecap="round" />
+                            <!-- Right Lower Leg -->
+                            <line id="right-lower-leg" x1="165" y1="260" x2="175" y2="320" stroke="#FFD4A3" stroke-width="11" stroke-linecap="round" />
+                            <!-- Right Shoe -->
+                            <ellipse id="right-shoe" cx="175" cy="328" rx="12" ry="8" fill="#555" stroke="#333" stroke-width="1" />
+                        </svg>
+                    </div>
+                            <!-- Head -->
+                            <circle id="head" cx="150" cy="60" r="30" fill="#667eea" />
+                            
+                            <!-- Body -->
+                            <line id="body" x1="150" y1="90" x2="150" y2="180" stroke="#667eea" stroke-width="8" stroke-linecap="round" />
+                            
+                            <!-- Arms -->
+                            <line id="left-arm" x1="150" y1="110" x2="100" y2="140" stroke="#667eea" stroke-width="8" stroke-linecap="round" />
+                            <line id="right-arm" x1="150" y1="110" x2="200" y2="140" stroke="#667eea" stroke-width="8" stroke-linecap="round" />
+                            
+                            <!-- Legs -->
+                            <line id="left-leg" x1="150" y1="180" x2="120" y2="250" stroke="#667eea" stroke-width="8" stroke-linecap="round" />
+                            <line id="right-leg" x1="150" y1="180" x2="180" y2="250" stroke="#667eea" stroke-width="8" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    
+                    <!-- Exercise Name -->
+                    <div id="exercise-name" style="font-size: 1.8rem; font-weight: 700; color: #2d3748; margin-bottom: 12px;">Get Ready!</div>
+                    <div id="exercise-instruction" style="font-size: 1.1rem; color: #718096; margin-bottom: 24px;">Starting in 3 seconds...</div>
+                    
+                    <!-- Controls -->
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button id="pause-btn" onclick="pauseExercise()" class="btn btn-secondary">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button onclick="skipExercise()" class="btn btn-secondary">
+                            <i class="fas fa-forward"></i> Skip
+                        </button>
+                        <button onclick="stopExercise()" class="btn btn-secondary">
+                            <i class="fas fa-stop"></i> Stop
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Resources Modal -->
+    <div class="modal large" id="resources-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-book-medical"></i> Mental Health Resources</h3>
+                <button class="modal-close" onclick="closeModal('resources-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="resources-grid">
+                    <div class="resource-section">
+                        <h4><i class="fas fa-phone-alt"></i> Crisis Support</h4>
+                        <div class="resource-links">
+                            <a href="tel:988" class="resource-link crisis">
+                                <i class="fas fa-phone"></i>
+                                <div>
+                                    <strong>National Suicide Prevention Lifeline</strong>
+                                    <span>Call or text 988 - Available 24/7</span>
+                                </div>
+                            </a>
+                            <a href="tel:911" class="resource-link emergency">
+                                <i class="fas fa-ambulance"></i>
+                                <div>
+                                    <strong>Emergency Services</strong>
+                                    <span>Call 911 for immediate emergency</span>
+                                </div>
+                            </a>
+                            <a href="sms:741741" class="resource-link">
+                                <i class="fas fa-sms"></i>
+                                <div>
+                                    <strong>Crisis Text Line</strong>
+                                    <span>Text HOME to 741741</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="resource-section">
+                        <h4><i class="fas fa-user-md"></i> Professional Help</h4>
+                        <div class="resource-links">
+                            <a href="https://www.psychologytoday.com/us/therapists" target="_blank" class="resource-link">
+                                <i class="fas fa-search"></i>
+                                <div>
+                                    <strong>Psychology Today</strong>
+                                    <span>Find therapists and counselors near you</span>
+                                </div>
+                            </a>
+                            <a href="https://www.samhsa.gov/find-help/national-helpline" target="_blank" class="resource-link">
+                                <i class="fas fa-hands-helping"></i>
+                                <div>
+                                    <strong>SAMHSA National Helpline</strong>
+                                    <span>1-800-662-HELP (4357)</span>
+                                </div>
+                            </a>
+                            <a href="https://www.nami.org/help" target="_blank" class="resource-link">
+                                <i class="fas fa-users"></i>
+                                <div>
+                                    <strong>NAMI</strong>
+                                    <span>National Alliance on Mental Illness</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="resource-section">
+                        <h4><i class="fas fa-laptop"></i> Online Support</h4>
+                        <div class="resource-links">
+                            <a href="https://www.betterhelp.com" target="_blank" class="resource-link">
+                                <i class="fas fa-video"></i>
+                                <div>
+                                    <strong>BetterHelp</strong>
+                                    <span>Online therapy and counseling</span>
+                                </div>
+                            </a>
+                            <a href="https://www.7cups.com" target="_blank" class="resource-link">
+                                <i class="fas fa-comment"></i>
+                                <div>
+                                    <strong>7 Cups</strong>
+                                    <span>Free emotional support and listening</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Memory Game Modal -->
+    <div class="modal" id="memory-game-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-th"></i> Memory Match Game</h3>
+                <button class="modal-close" onclick="closeModal('memory-game-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center;">
+                    <div id="memory-score" style="font-size: 1.3rem; font-weight: 700; margin-bottom: 20px; color: #667eea;">
+                        Matches: 0 / 6
+                    </div>
+                    <div id="memory-board" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 350px; margin: 0 auto;"></div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 24px;" onclick="resetMemoryGame()">
+                        <i class="fas fa-redo"></i> New Game
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Color Match Game Modal -->
+    <div class="modal" id="colors-game-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-palette"></i> Color Match Challenge</h3>
+                <button class="modal-close" onclick="closeModal('colors-game-modal')">×</button>
+            </div>
+            <div class="modal-body">
+                <div style="text-align: center;">
+                    <div id="color-instruction" style="font-size: 1.2rem; margin-bottom: 20px; font-weight: 600; color: #667eea;">
+                        Match the color!
+                    </div>
+                    <div id="color-target" style="width: 120px; height: 120px; border-radius: 16px; margin: 20px auto; border: 4px solid #ddd; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+                    <div id="color-options" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 300px; margin: 20px auto;"></div>
+                    <div id="color-score" style="font-size: 1.3rem; font-weight: 700; margin-top: 20px; color: #48bb78;">
+                        Score: 0
+                    </div>
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 20px;" onclick="resetColorGame()">
+                        <i class="fas fa-redo"></i> New Round
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Word Scramble Game Modal -->
+<div class="modal large" id="snake-game-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-spell-check"></i> Word Scramble</h3>
+            <button class="modal-close" onclick="closeModal('snake-game-modal')">×</button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                    <div style="font-size: 1.1rem; font-weight: 600; color: #667eea;">
+                        Score: <span id="scramble-score">0</span>
+                    </div>
+                    <div style="font-size: 1.1rem; font-weight: 600; color: #48bb78;">
+                        Level: <span id="scramble-level">1</span>
+                    </div>
+                    <div style="font-size: 1.1rem; font-weight: 600; color: #ed8936;">
+                        Streak: <span id="scramble-streak">0</span>
+                    </div>
+                </div>
+                
+                <div style="margin: 24px 0;">
+                    <div style="font-size: 0.95rem; color: #718096; margin-bottom: 12px;">Unscramble this word:</div>
+                    <div id="scrambled-display" style="font-size: 3rem; font-weight: 700; color: #667eea; letter-spacing: 12px; margin: 20px 0; min-height: 80px; display: flex; align-items: center; justify-content: center;"></div>
+                    
+                    <div style="font-size: 0.9rem; color: #667eea; margin-top: 12px; font-style: italic;" id="word-hint"></div>
+                </div>
+                
+                <div style="margin: 24px 0;">
+                    <input type="text" id="scramble-input" placeholder="Type your answer..." 
+                           style="padding: 16px 24px; font-size: 1.3rem; border: 3px solid #667eea; border-radius: 16px; width: 100%; max-width: 450px; text-align: center; text-transform: uppercase; font-weight: 600;" 
+                           maxlength="20">
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: center; margin: 24px 0;">
+                    <button class="btn btn-primary" onclick="checkScrambleAnswer()" style="font-size: 1.1rem; padding: 14px 36px;">
+                        <i class="fas fa-check"></i> Submit
+                    </button>
+                    <button class="btn btn-secondary" onclick="scrambleHint()" style="font-size: 1.1rem; padding: 14px 36px;">
+                        <i class="fas fa-lightbulb"></i> Hint
+                    </button>
+                    <button class="btn btn-secondary" onclick="skipScrambleWord()" style="font-size: 1.1rem; padding: 14px 36px;">
+                        <i class="fas fa-forward"></i> Skip
+                    </button>
+                </div>
+                
+                <div id="scramble-feedback" style="min-height: 40px; font-size: 1.3rem; font-weight: 700; margin: 16px 0;"></div>
+                
+                <button class="btn btn-primary" style="width: 100%; max-width: 400px; margin-top: 24px;" onclick="resetScrambleGame()">
+                    <i class="fas fa-redo"></i> New Game
+                </button>
+                
+                <div style="margin-top: 20px; color: #718096; font-size: 0.9rem;">
+                    Unscramble mental health related words • Get points for correct answers!
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Dino Runner Game Modal -->
+<div class="modal large" id="dino-game-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-dragon"></i> Dino Runner</h3>
+            <button class="modal-close" onclick="closeModal('dino-game-modal'); stopDinoGame();">×</button>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: center;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    <div style="font-size: 1.1rem; font-weight: 600; color: #667eea;">
+                        Score: <span id="dino-score">0</span>
+                    </div>
+                    <div style="font-size: 1.1rem; font-weight: 600; color: #48bb78;">
+                        High: <span id="dino-high-score">0</span>
+                    </div>
+                </div>
+                
+                <canvas id="dino-canvas" width="600" height="200" style="border: 3px solid #667eea; border-radius: 12px; background: #f7fafc; display: block; margin: 0 auto; max-width: 100%;"></canvas>
+                
+                <div id="dino-game-over" style="display: none; margin-top: 20px; font-size: 1.5rem; font-weight: 700; color: #f56565;">
+                    GAME OVER! 🦖
+                </div>
+                
+                <div style="margin-top: 24px;">
+                    <button id="dino-start-btn" class="btn btn-primary" onclick="startDinoGame()" style="font-size: 1.1rem; padding: 14px 36px;">
+                        <i class="fas fa-play"></i> Start Game
+                    </button>
+                    <button id="dino-restart-btn" class="btn btn-secondary" onclick="restartDinoGame()" style="display: none; font-size: 1.1rem; padding: 14px 36px; margin-left: 12px;">
+                        <i class="fas fa-redo"></i> Play Again
+                    </button>
+                </div>
+                
+                <div style="margin-top: 20px; color: #718096; font-size: 0.9rem;">
+                    <strong>Controls:</strong> Press <kbd style="background: #667eea; color: white; padding: 4px 8px; border-radius: 4px;">SPACE</kbd> or <kbd style="background: #667eea; color: white; padding: 4px 8px; border-radius: 4px;">↑</kbd> to jump!
+                </div>
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+    <!-- Load JavaScript from separate file -->
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    
+</body>
+</html>

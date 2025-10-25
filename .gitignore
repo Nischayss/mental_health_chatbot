@@ -1,0 +1,28 @@
+# Virtual environment
+venv/
+__pycache__/
+
+# Model and data files
+*.pt
+*.bin
+*.pkl
+*.h5
+*.joblib
+*.npy
+*.npz
+trained_model/
+faiss_index/
+TinyLlama-1.1B-Chat-v1.0/
+document_store/
+
+# Environment and credentials
+.env
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Compiled Python files
+*.pyc
+*.pyo
+*.pyd
