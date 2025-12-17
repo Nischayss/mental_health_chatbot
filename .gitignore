@@ -1,28 +1,77 @@
-# Virtual environment
-venv/
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# Model and data files
-*.pt
-*.bin
-*.pkl
-*.h5
-*.joblib
-*.npy
-*.npz
-trained_model/
-faiss_index/
-TinyLlama-1.1B-Chat-v1.0/
-document_store/
-
-# Environment and credentials
+# Environment variables
 .env
+.env.local
+.env.*.local
 
-# System files
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
-Thumbs.db
 
-# Compiled Python files
-*.pyc
-*.pyo
-*.pyd
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Model files (IMPORTANT!)
+TinyLlama-1.1B-Chat-v1.0/
+trained_model/*.h5
+trained_model/*.pkl
+trained_model/*.pt
+trained_model/*.pth
+trained_model/*.ckpt
+*.bin
+*.safetensors
+
+# User data (NEVER UPLOAD!)
+user_data/
+document_store/
+faiss_index/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
