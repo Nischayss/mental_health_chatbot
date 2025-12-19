@@ -91,7 +91,7 @@ NISRA (Neural Interactive Support & Resource Assistant) is a full-stack mental h
 - **Communication**: SMTP (email), Twilio (SMS)(optional)
 
 ### Frontend
-- **Framework**: React 18 with Vite
+- **Framework**: React with Vite
 - **Styling**: Tailwind CSS
 - **State Management**: Context API
 - **Package Manager**: npm 11.6.2
