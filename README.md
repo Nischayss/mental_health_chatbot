@@ -149,7 +149,7 @@ You can train the model using either of the following environments:
 1. **Open Google Colab**
 
 2. Navigate to **Runtime → Change runtime type**
-   - **Hardware Accelerator**: `GPU`[used here is cpu]
+   - **Hardware Accelerator**: `GPU`[used here is cpu for local deployment trained using gpu]
    - **Python version**: `3.10`
 
 3. **Clone the repository**
