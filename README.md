@@ -116,7 +116,7 @@ NISRA (Neural Interactive Support & Resource Assistant) is a full-stack mental h
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/nisra-mental-health-assistant.git
+git clone https://github.com/Nischayss/mental_health.git
 cd mental_health_chatbot
 
 # Create and activate virtual environment
