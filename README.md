@@ -112,6 +112,83 @@ NISRA (Neural Interactive Support & Resource Assistant) is a full-stack mental h
 - **npm**: 11.6.2
 - **Git**: For repository cloning
 
+
+### training model 
+
+## 🧠 Model Training (Required for Local AI Mode)
+
+This project supports **local fine-tuned inference**.  
+To enable the **Training Model** response mode, you must first fine-tune the base language model using the provided counseling dataset.
+
+---
+
+### 📂 Dataset
+
+- **Path**
+  ```
+  document_store/20200325_counsel_chat.csv
+  ```
+- **Source**: Counseling-style question–answer dataset  
+- **Purpose**: Used to specialize the base LLM for mental health–oriented conversations
+
+---
+
+### 🧪 Training Environment Options
+
+You can train the model using either of the following environments:
+
+- **Jupyter Notebook (Local Machine)**
+- **Google Colab (Recommended – GPU support)**
+
+> ⚠️ **CPU-based training is not recommended** due to high memory consumption and long training time.
+
+---
+
+### 🚀 Training Steps (Google Colab – Recommended)
+
+1. **Open Google Colab**
+
+2. Navigate to **Runtime → Change runtime type**
+   - **Hardware Accelerator**: `GPU`[used here is cpu]
+   - **Python version**: `3.10`
+
+3. **Clone the repository**
+   ```bash
+   git clone https://github.com/Nischayss/mental_health.git
+   cd mental_health_chatbot
+   ```
+
+4. **Install training dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+5. **Open the training notebook**
+   ```
+   trained_model/1_train_model.ipynb
+   ```
+
+6. **Update the dataset path inside the notebook**
+   ```python
+   DATASET_PATH = "document_store/20200325_counsel_chat.csv"
+   ```
+
+7. **Run all cells in the notebook**
+   - Loads the base model (**TinyLlama-1.1B**)
+   - Applies **LoRA / PEFT fine-tuning**
+   - Trains on counseling conversations
+   - Saves trained adapters automatically
+
+---
+
+### 📌 Notes
+
+- Model training is a **one-time process**
+- Re-training is only required if:
+  - The dataset is updated
+  - The base model is changed
+- Without training, the application will fall back to API-based or rule-based responses
+
 ### Backend Setup
 
 ```bash
