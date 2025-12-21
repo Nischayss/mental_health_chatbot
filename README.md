@@ -25,9 +25,9 @@
 
 ## 🎯 Overview
 
-NISRA (Neural Interactive Support & Resource Assistant) is a full-stack mental health assistant demonstrating responsible AI implementation in sensitive domains. The system combines:
+NISRA (Neural Interactive Support & Resource Assistant) is a  mental health assistant demonstrating responsible AI implementation in sensitive domains which includes RAG. The system combines:
 
-- **Local AI Model Processing**: Fine-tuned TinyLlama-1.1B with PEFT adapters
+- **Local AI Model Processing**: Fine-tuned TinyLlama-1.1B with PEFT adapters and RAG responses
 - **Multi-Modal Response System**: Local model, professional guidance, and web-assisted responses
 - **Crisis Detection & Intervention**: Rule-based safety layer with emergency resources
 - **Holistic Wellness Features**: Mood tracking, breathing exercises, games, and resources
@@ -47,12 +47,33 @@ NISRA (Neural Interactive Support & Resource Assistant) is a full-stack mental h
 - **Multiple Response Modes**:
   - **Training Model**: Fine-tuned local model with mental health specialization
   - **Professional**: Safe, guidance-oriented responses by api key 
+  - **RAG System**: 10,000+ mental health Q&A pairs with hybrid search.Cross-Encoder Re-ranking used which Improves answer quality with ms-marco-MiniLM-L-6-v2         Automatically fetches current information when local confidence is low (<0.6)
   - **Web-Assisted**: Context-enriched responses using web search
   - **Mixed Strategy**: Adaptive combination of available modes
 
 - Intelligent conversation history management
 - Real-time typing indicators
 - User-configurable response strategy
+
+### Technical Features
+
+⚡ Smart Caching:
+
+- FAISS index cached after first build (~73 seconds startup)
+- Subsequent loads: <2 seconds
+- Response caching for frequently asked questions
+
+## Models Used
+
+- RAG Embeddings: all-mpnet-base-v2 (768 dimensions) - Best sentence transformer for semantic search
+- Re-ranker: cross-encoder/ms-marco-MiniLM-L-6-v2 - Improves top-k results quality
+- Fine-tuned Model: TinyLlama-1.1B-Chat with PEFT adapters
+- Professional LLM: Llama 3.2 Vision via Ollama API (configurable)
+
+## Multi-Format Data Support:
+
+- CSV files (counsel_chat, mental_health_faq, crisis_support)
+- JSON files (therapy_sessions, structured dialogues)
 
 ### 🛡️ Safety & Crisis Management
 
@@ -112,7 +133,6 @@ NISRA (Neural Interactive Support & Resource Assistant) is a full-stack mental h
 - **npm**: 11.6.2
 - **Git**: For repository cloning
 
-
 ### training model 
 
 ## 🧠 Model Training (Required for Local AI Mode)
@@ -143,6 +163,15 @@ You can train the model using either of the following environments:
 > ⚠️ **CPU-based training is not recommended** due to high memory consumption and long training time.
 
 ---
+
+## Download & Prepare RAG Data
+
+1.**Download datasets from HuggingFace**
+   - python download_datasets.py
+
+2.**Build RAG index (runs automatically on first app.py launch)**
+   -python rag_retriever.py
+
 
 ### 🚀 Training Steps (Google Colab – Recommended)
 
@@ -359,7 +388,6 @@ POST /auth/reset-password
 mental_health_chatbot/
 ├── app.py                      # Flask application entry point
 ├── rag_retriever.py            # RAG/FAISS retrieval logic
-├── web_search.py               # Web search integration
 ├── requirements.txt            # Python dependencies
 ├── .env.example                # Environment template
 ├── .gitignore
