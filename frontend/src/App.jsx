@@ -344,6 +344,7 @@ function App() {
                   {[
                     { id: 'training', label: 'Training Model' },
                     { id: 'professional', label: 'Professional' },
+                    { id: 'rag', label: 'RAG+' },  // NEW!
                     { id: 'web', label: 'Web Search' },
                     { id: 'mix', label: 'Mix All 3' }
                   ].map((model) => (
@@ -439,6 +440,7 @@ function App() {
               {[
                 { id: 'training', label: 'Training' },
                 { id: 'professional', label: 'Professional' },
+                { id: 'rag', label: 'RAG+' },  // NEW!
                 { id: 'web', label: 'Web' },
                 { id: 'mix', label: 'Mix' }
               ].map((model) => (

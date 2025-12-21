@@ -1,239 +1,435 @@
-# Mental Health Chatbot
+# NISRA – AI-Powered Mental Health Assistant
 
-A retrieval-augmented chatbot for mental health support. This repository includes a Flask-like backend, a Vite + React frontend, local model files for an LLM (TinyLlama), and document/index stores used for retrieval.
-
-## Features
-- Conversation UI with context and history (frontend in `frontend/src`)
-- Retrieval-augmented responses using documents in `document_store/` and `faiss_index/`
-- Local LLM model folder: `TinyLlama-1.1B-Chat-v1.0` (weights + tokenizer)
-- Trained adapter in `trained_model/` for domain-specific behavior
-
-## Requirements
-- Python 3.10+ (Windows tested)
-- Node.js 18+ and npm/yarn for the frontend
-- GPU recommended for local model inference; CPU will work but slower
-
-## Quick Start (local)
-
-1. Create and activate a Python virtual environment
-
-```bash
-python -m venv .venv
-.\.venv\Scripts\activate
-```
-
-2. Install Python dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-3. Install frontend dependencies and run dev server
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-4. Run the backend (from project root)
-
-```bash
-python app.py
-# or if the project uses flask run: FLASK_APP=app.py flask run
-```
-
-Open the frontend URL shown by Vite (usually http://localhost:5173) to use the app.
-
-## Project Layout
-- `app.py` — backend entrypoint (API + chat endpoints)
-- `rag_retriever.py`, `web_search.py` — retrieval and search utilities
-- `document_store/` — CSV and source documents used for retrieval
-- `faiss_index/` — Faiss vector index files
-- `TinyLlama-1.1B-Chat-v1.0/` — local model weights and tokenizer
-- `trained_model/` — adapter weights used to fine-tune behavior
-- `frontend/` — React + Vite app (UI components in `frontend/src`)
-- `user_data/` — sample users and chat histories
-
-### Detailed Project Structure
-
-- `app.py` — main Python server. Exposes REST endpoints for chat and retrieval.
-- `rag_retriever.py` — builds and queries vector store and retrieval pipeline.
-- `web_search.py` — optional web-search helper used to enrich retrieval (may require API keys).
-- `document_store/20200325_counsel_chat.csv` — sample dataset used for retrieval examples.
-- `faiss_index/` — prebuilt Faiss index files (binaries and metadata) used by the retriever.
-- `TinyLlama-1.1B-Chat-v1.0/` — model artifacts (weights, tokenizer, config). Configure `MODEL_DIR` to point here.
-- `trained_model/` — optional adapter or fine-tuned weights applied on top of the base model.
-- `frontend/` — Vite + React frontend. Key files:
-	- `frontend/src/App.jsx` — app shell and routing
-	- `frontend/src/components/chat/*` — chat UI components
-	- `frontend/package.json` — frontend scripts and deps
-- `user_data/` — persisted users and chat histories (JSON). Treat this as sensitive.
-
-If you add new modules, place retrieval-related code in `rag_retriever.py` or a new module under a clear `services/` namespace.
-
-## Model & Data Notes
-- This repository stores model files locally under `TinyLlama-1.1B-Chat-v1.0` and an adapter in `trained_model/`. Ensure you have appropriate hardware and legal rights to run these models.
-- The `document_store/20200325_counsel_chat.csv` is included for retrieval examples; treat user data responsibly.
-
-## Environment & Secrets
-- If your setup requires API keys or other secrets, export them as environment variables before starting the backend. No secrets are committed to this repository by default.
-
-### `.env.example` and recommended variables
-
-Copy `.env.example` to `.env` and fill values before running locally. Many Python apps use `python-dotenv` or similar to load `.env` files; if not present, set the variables in your shell.
-
-Common variables and purpose:
-
-- `FLASK_ENV` — `development` or `production`. Affects debug mode and reloading.
-- `FLASK_APP` — path to the Flask entrypoint (e.g., `app.py`).
-- `SECRET_KEY` — app secret for session/csrf signing. Replace `changeme` with a secure random value.
-- `MODEL_DIR` — relative path to local model directory (default: `TinyLlama-1.1B-Chat-v1.0`).
-- `ADAPTER_DIR` — path to the trained adapter (if used): `trained_model`.
-- `FAISS_INDEX_DIR` — path to the `faiss_index` folder.
-- `DOCUMENT_STORE` — path to `document_store`.
-- `PORT` — port to run the backend on (e.g., `8000`).
-- `FRONTEND_URL` — URL where the frontend runs (default: `http://localhost:5173`).
-- `OPENAI_API_KEY` — optional; only set if you use external APIs for web search or fallback LLMs.
-- `DATABASE_URL` — optional DB connection string (e.g., `sqlite:///data.db`).
-
-Example usage (Windows PowerShell):
-
-```powershell
-copy .env.example .env
-(Notepad .env) # or edit as preferred
-python app.py
-```
-
-On Unix/macOS:
-
-```bash
-cp .env.example .env
-export $(cat .env | xargs)
-python app.py
-```
-
-## Troubleshooting
-- Port in use: change ports in `app.py` or Vite config.
-- Index missing: re-run the index build script (if provided) to create files under `faiss_index/`.
-
-## Contributing
-- Open issues or PRs for bugs and improvements.
-- Add tests for backend APIs and frontend components where possible.
-
-## License
-Specify your license here (e.g., MIT). If you want me to add a license file, tell me which one.
+**A privacy-first, self-hostable mental health support system combining AI assistance with evidence-based wellness tools**
 
 ---
-If you'd like, I can also:
-- Add a short `run-local` script for Windows to start both frontend and backend.
-- Commit the README and create a small checklist/PR.
 
-## Project Tree (Backend / Frontend grouped)
+## ⚠️ Important Disclaimer
 
-The repository separates server (backend) and client (frontend) concerns. Use the backend section to run the Python server and the frontend section to run the Vite app.
+**NISRA is a research and educational prototype and is NOT a substitute for professional mental health care.** If you or someone you know is experiencing a mental health crisis, please contact:The required assistance 
+---
 
-```
-mental_health_chatbot/
-├─ backend/
-│  ├─ app.py
-│  ├─ rag_retriever.py
-│  ├─ web_search.py
-│  ├─ requirements.txt
-│  ├─ .env.example
-│  ├─ models/
-│  │  └─ TinyLlama-1.1B-Chat-v1.0/
-│  │     ├─ model.safetensors
-│  │     └─ tokenizer.*
-│  ├─ trained_model/
-│  │  └─ adapter_model.safetensors
-│  ├─ document_store/
-│  │  └─ 20200325_counsel_chat.csv
-│  ├─ faiss_index/
-│  └─ templates/
-│     └─ index.html
-├─ frontend/
-│  ├─ package.json
-│  ├─ index.html
-│  └─ src/
-│     ├─ App.jsx
-│     ├─ main.jsx
-│     ├─ index.css
-│     └─ components/
-│        ├─ chat/
-│        │  ├─ ChatWindow.jsx
-│        │  ├─ ChatInput.jsx
-│        │  └─ ChatMessage.jsx
-│        ├─ Auth.jsx
-│        └─ ModelSelector.jsx
-├─ user_data/
-│  ├─ users.json
-│  └─ chat_histories/
-└─ README.MD
-```
+## 📋 Table of Contents
 
-Run each part separately:
+- [Overview](#-overview)
+- [Features](#-features)
+- [Technology Stack](#-technology-stack)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Usage](#-usage)
+- [Project Structure](#-project-structure)
+- [Limitations](#-limitations)
+- [Authors](#-authors)
 
-Backend (from repo root):
+---
 
-```powershell
+## 🎯 Overview
+
+NISRA (Neural Interactive Support & Resource Assistant) is a full-stack mental health assistant demonstrating responsible AI implementation in sensitive domains. The system combines:
+
+- **Local AI Model Processing**: Fine-tuned TinyLlama-1.1B with PEFT adapters
+- **Multi-Modal Response System**: Local model, professional guidance, and web-assisted responses
+- **Crisis Detection & Intervention**: Rule-based safety layer with emergency resources
+- **Holistic Wellness Features**: Mood tracking, breathing exercises, games, and resources
+
+### Use Cases
+
+- Academic research and demonstrations
+- Educational AI/ML projects
+- Privacy-focused mental health support prototyping
+
+---
+
+## ✨ Features
+
+### 🤖 AI-Powered Chat Interface
+
+- **Multiple Response Modes**:
+  - **Training Model**: Fine-tuned local model with mental health specialization
+  - **Professional**: Safe, guidance-oriented responses by api key 
+  - **Web-Assisted**: Context-enriched responses using web search
+  - **Mixed Strategy**: Adaptive combination of available modes
+
+- Intelligent conversation history management
+- Real-time typing indicators
+- User-configurable response strategy
+
+### 🛡️ Safety & Crisis Management
+
+- Keyword-based crisis detection for high-risk language patterns
+- Immediate intervention with crisis-specific responses
+- Emergency resource modal with helplines and professional resources
+- Optional guardian alert system (SMS/email notifications)
+- Multi-layer safety checks and content filtering
+
+### 🧘 Wellness Companion Features
+
+- **Mood Tracker**: Visual mood logging with analytics
+- **Breathing Exercises**: Guided breathing patterns with audio
+- **Physical Exercise Library**: 
+  - Aerobic exercises with video demonstrations
+  - Yoga poses with video guides
+- **Games & Activities**: Relaxation-focused content
+- **Resource Center**: Curated mental health resources
+- **Ambient Soundscapes**: Nature sounds (rain, ocean, birds, waterfall)
+
+### 👤 User Management
+
+- Authentication system (signup, login, session management)
+- Password recovery via email/SMS
+- Local browser storage for privacy
+- Customizable user preferences
+
+---
+
+## 🛠 Technology Stack
+
+### Backend
+- **Framework**: Flask 
+- **ML/AI**: Hugging Face Transformers, PyTorch, PEFT
+- **Model**: TinyLlama-1.1B-Chat-v1.0
+- **Communication**: SMTP (email), Twilio (SMS)(optional)
+
+### Frontend
+- **Framework**: React 18 with Vite
+- **Styling**: Tailwind CSS
+- **State Management**: Context API
+- **Package Manager**: npm 11.6.2
+
+### Infrastructure
+- **Backend**: http://127.0.0.1:5000
+- **Frontend**: http://localhost:3000
+- **Model**: Local inference (self-hosted)
+
+---
+
+## 📦 Installation
+
+### Prerequisites
+
+- **Python**: 3.10
+- **Node.js**: 24.10.0
+- **npm**: 11.6.2
+- **Git**: For repository cloning
+
+### Backend Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/nisra-mental-health-assistant.git
+cd mental_health_chatbot
+
+# Create and activate virtual environment
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# macOS/Linux
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment variables
+cp .env.example .env
+# Edit .env with your settings
+
+# Run backend
 python app.py
 ```
 
-Frontend (from `frontend`):
+**Backend runs at**: `http://127.0.0.1:5000`
+
+### Frontend Setup
 
 ```bash
+# Navigate to frontend
 cd frontend
+
+# Install dependencies
 npm install
-npm run dev
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your settings
+
+# Start development server
+npm start
 ```
 
-This grouped tree makes the separation clearer; tell me if you prefer the original flat layout or want additional files listed.
+**Frontend runs at**: `http://localhost:3000`
 
-## Project Tree
+### Model Setup (Optional)
 
-A concise visual tree of the repository (top-level and key files):
+For local model inference:
+
+1. Download TinyLlama-1.1B-Chat-v1.0 from Hugging Face
+2. Place model files in `MODEL_BASE_PATH` directory
+3. Ensure PEFT adapters are in `trained_model/` directory
+4. Update `.env` with correct paths
+
+> **Note**: Application works without local models using fallback responses or external APIs.
+
+---
+
+## ⚙️ Configuration
+
+### Backend Environment Variables (`.env`)
+
+```env
+# Application Security
+SECRET_KEY=your-secret-key-here
+
+# Local Model Paths
+MODEL_BASE_PATH=path/to/TinyLlama-1.1B-Chat-v1.0
+ADAPTER_PATH=trained_model
+
+# External LLM API (Optional)
+LLM_API_URL=https://api.openai.com/v1/chat/completions
+LLM_API_KEY=your-api-key-here
+
+# Email Configuration (Optional)
+SMTP_EMAIL=your-email@gmail.com
+SMTP_APP_PASSWORD=your-app-password
+
+# Twilio SMS (Optional)
+TWILIO_ACCOUNT_SID=your-account-sid
+TWILIO_AUTH_TOKEN=your-auth-token
+TWILIO_PHONE_NUMBER=+1234567890
+
+# Web Search (Optional)
+SEARCH_API_KEY=your-search-api-key
+```
+
+### Frontend Environment Variables (`frontend/.env`)
+
+```env
+# API Endpoint
+REACT_APP_API_URL=http://127.0.0.1:5000
+
+# Feature Flags
+REACT_APP_ENABLE_WEB_SEARCH=true
+REACT_APP_ENABLE_CRISIS_ALERTS=true
+```
+
+### Security Notes
+
+- Never commit `.env` files
+- Use strong, unique `SECRET_KEY`
+- Rotate API keys regularly
+- Enable HTTPS in production
+
+---
+
+## 🚀 Usage
+
+### Starting the Application
+
+1. **Start Backend**:
+   ```bash
+   python app.py
+   ```
+
+2. **Start Frontend** (new terminal):
+   ```bash
+   cd frontend
+   npm start
+   ```
+
+3. **Access**: Open browser to `http://localhost:3000`
+
+### Basic Workflow
+
+1. Create account or login
+2. Select response mode (Training/Professional/Web/Mix)
+3. Start conversation in chat interface
+4. Explore wellness features from sidebar
+5. Crisis support activates automatically when needed
+
+### API Endpoints
+
+#### Chat
+```http
+POST /chat
+Content-Type: application/json
+
+{
+  "message": "I'm feeling anxious today",
+  "mode": "professional",
+  "user_id": "user123"
+}
+```
+
+#### Health Check
+```http
+GET /health
+```
+
+#### Authentication
+```http
+POST /auth/signup
+POST /auth/login
+POST /auth/logout
+POST /auth/reset-password
+```
+
+---
+
+## 📁 Project Structure
 
 ```
 mental_health_chatbot/
-├─ app.py
-├─ rag_retriever.py
-├─ web_search.py
-├─ requirements.txt
-├─ README.MD
-├─ .env.example
-├─ TinyLlama-1.1B-Chat-v1.0/
-│  ├─ model.safetensors
-│  ├─ config.json
-│  └─ tokenizer.*
-├─ trained_model/
-│  ├─ adapter_model.safetensors
-│  └─ adapter_config.json
-├─ document_store/
-│  └─ 20200325_counsel_chat.csv
-├─ faiss_index/
-├─ user_data/
-│  ├─ users.json
-│  └─ chat_histories/
-├─ frontend/
-│  ├─ package.json
-│  ├─ index.html
-│  └─ src/
-│     ├─ App.jsx
-│     ├─ main.jsx
-│     ├─ index.css
-│     ├─ BreathingExercise.jsx
-│     ├─ MoodTracker.jsx
-│     └─ components/
-│        ├─ Auth.jsx
-│        ├─ ModelSelector.jsx
-│        └─ chat/
-│           ├─ ChatWindow.jsx
-│           ├─ ChatInput.jsx
-│           └─ ChatMessage.jsx
-└─ templates/
-	└─ index.html
-
+├── app.py                      # Flask application entry point
+├── rag_retriever.py            # RAG/FAISS retrieval logic
+├── requirements.txt            # Python dependencies
+├── .env.example                # Environment template
+├── .gitignore
+│
+├── templates/
+│   └── index.html
+│
+├── trained_model/              # Model config & adapters
+│   ├── 1_train_model.ipynb
+│   ├── adapter_config.json
+│   ├── tokenizer files...
+│   └── README.md
+│
+├── frontend/                   # React application
+│   ├── package.json
+│   ├── vite.config.js
+│   ├── tailwind.config.js
+│   │
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── main.jsx
+│   │   ├── index.css
+│   │   │
+│   │   ├── BreathingExercise.jsx
+│   │   ├── Exercise.jsx
+│   │   ├── GamesHub.jsx
+│   │   ├── MoodTracker.jsx
+│   │   ├── Resources.jsx
+│   │   │
+│   │   ├── components/
+│   │   │   ├── Auth.jsx
+│   │   │   ├── CrisisModal.jsx
+│   │   │   ├── ModelSelector.jsx
+│   │   │   ├── chat/
+│   │   │   │   ├── ChatInput.jsx
+│   │   │   │   ├── ChatMessage.jsx
+│   │   │   │   ├── ChatWindow.jsx
+│   │   │   │   └── FloatingChatButton.jsx
+│   │   │   └── ui/
+│   │   │       ├── Button.jsx
+│   │   │       └── Sidebar.jsx
+│   │   │
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx
+│   │   │
+│   │   ├── hooks/
+│   │   │   ├── useChat.js
+│   │   │   └── useTheme.js
+│   │   │
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   │
+│   │   └── utils/
+│   │       └── constants.js
+│   │
+│   └── static/
+│       ├── sounds/             # Ambient audio files
+│       │   ├── birds-in-cressent.mp3
+│       │   ├── gentle-rain.mp3
+│       │   ├── ocean-waves.mp3
+│       │   └── small-waterfall.mp3
+│       │
+│       └── videos/             # Exercise videos
+│           ├── aerobics/
+│           │   ├── arm_circles.mp4
+│           │   ├── high_knees.mp4
+│           │   ├── jumping_jack.mp4
+│           │   ├── quick_feet.mp4
+│           │   └── scissor_chops.mp4
+│           └── yoga/
+│               ├── bridge_pose.mp4
+│               ├── childs_pose.mp4
+│               ├── cobra.mp4
+│               ├── downward_dog.mp4
+│               └── extended_triangle.mp4
+│
+└── assets/
+    └── highlights.svg
 ```
 
-This tree focuses on the most relevant files and folders; add or expand entries if you'd like a deeper view for any subfolder.
+---
+
+## ⚠️ Limitations
+
+### Technical
+- Crisis detection uses keyword matching (not ML-based)
+- Local model requires significant disk space and compute
+- Browser storage is not encrypted
+- No automated testing suite
+- Single-user focus (not multi-user ready)
+
+### Clinical
+- **Not a medical device**: No FDA approval or clinical validation
+- **Not therapy**: Does not replace licensed professionals
+- **Not diagnostic**: Cannot diagnose conditions
+- **Limited crisis handling**: Basic resource provision only
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! Areas of interest:
+
+- Enhanced crisis detection algorithms
+- Improved model fine-tuning
+- New wellness features
+- Testing suite development
+- Documentation improvements
+- Accessibility enhancements
+
+### Steps
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/name`)
+3. Commit changes (`git commit -m 'Add feature'`)
+4. Push to branch (`git push origin feature/name`)
+5. Open Pull Request
+
+---
+
+## 👥 Authors
+
+- **Nischay SS**
+- **Shivashankar Naik**
+- **Shivashankar Murthy**
+- **Ullas**
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 🙏 Acknowledgments
+
+- Hugging Face for transformer models and PEFT
+- TinyLlama team for the base model
+- Mental health professionals for guidance
+- Open source community
+
+---
+
+
+**If you're in crisis, please reach out to a professional immediately.**
+
+**NISRA is for learning and exploration, not a replacement for human care.**
+
+Made with ❤️ for mental health awareness and responsible AI development by us - team NISRA ❤️
+
