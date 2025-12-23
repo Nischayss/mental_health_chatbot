@@ -1,6 +1,7 @@
 # NISRA – AI-Powered Mental Health Assistant
 
 **A privacy-first, self-hostable mental health support system combining AI assistance with evidence-based wellness tools**
+NISRA implements a **Hybrid Generative Adaptive RAG**, with local retrieval and API-based generation only. This ensures privacy-first, cost-efficient, and well-grounded responses.
 
 ---
 
@@ -31,7 +32,7 @@ NISRA (Neural Interactive Support & Resource Assistant) is a  mental health assi
 - **Multi-Modal Response System**: Local model, professional guidance, and web-assisted responses
 - **Crisis Detection & Intervention**: Rule-based safety layer with emergency resources
 - **Holistic Wellness Features**: Mood tracking, breathing exercises, games, and resources
-
+- **RAG Based Response**:uses RAG based response and api-key for generation 
 ### Use Cases
 
 - Academic research and demonstrations
@@ -47,7 +48,7 @@ NISRA (Neural Interactive Support & Resource Assistant) is a  mental health assi
 - **Multiple Response Modes**:
   - **Training Model**: Fine-tuned local model with mental health specialization
   - **Professional**: Safe, guidance-oriented responses by api key 
-  - **RAG System**: 10,000+ mental health Q&A pairs with hybrid search.Cross-Encoder Re-ranking used which Improves answer quality with ms-marco-MiniLM-L-6-v2         Automatically fetches current information when local confidence is low (<0.6)
+  - **RAG System**: Mental health knowledge base with hybrid FAISS + BM25 retrieval, cross-encoder re-ranking (ms-marco-MiniLM-L-6-v2), and adaptive web augmentation under low-confidence conditions (<0.6).
   - **Web-Assisted**: Context-enriched responses using web search
   - **Mixed Strategy**: Adaptive combination of available modes
 

@@ -267,6 +267,75 @@ def call_ollama_api(prompt, max_tokens=1000, temperature=0.7):
     except Exception as e:
         print(f"❌ LLM API call failed: {e}")
         return None
+def generate_with_retrieved_context(user_query, retrieved_contexts, use_ollama=True):
+    """
+    🧠 GENERATION PHASE - Synthesize retrieved knowledge into natural response
+    This is where RAG's 'G' happens using Ollama LLM
+    """
+    if not use_ollama or not ollama_client or not check_ollama_rate_limit():
+        return generate_fallback_with_context(user_query, retrieved_contexts)
+    
+    # Prepare context from retrieved documents
+    context_text = "\n\n".join([
+        f"[Source {i+1}]: {ctx.get('answer', ''[:300])}"
+        for i, ctx in enumerate(retrieved_contexts[:3])
+    ])
+    
+    # Enhanced prompt for natural therapeutic response
+    prompt = f"""You are NISRA, a compassionate mental health support AI. A person asked: "{user_query}"
+
+**Retrieved Context from Knowledge Base:**
+{context_text}
+
+**Your Task:**
+1. Synthesize the context into a natural, empathetic response
+2. Don't just repeat the sources - create a cohesive answer
+3. Use therapeutic language (validate feelings, offer hope, suggest actions)
+4. If context is insufficient, acknowledge it honestly
+5. Always end with encouragement and crisis resources if needed
+
+Respond naturally as if having a caring conversation (400-600 words):"""
+
+    try:
+        response_text = call_ollama_api(prompt, max_tokens=800, temperature=0.7)
+        increment_ollama_counter()
+        
+        if response_text:
+            return {
+                'answer': response_text,
+                'generation_method': 'ollama_synthesis',
+                'context_used': len(retrieved_contexts)
+            }
+    except Exception as e:
+        print(f"⚠️ Ollama generation failed: {e}")
+    
+    return generate_fallback_with_context(user_query, retrieved_contexts)
+
+
+def generate_fallback_with_context(user_query, retrieved_contexts):
+    """Fallback generation when Ollama unavailable"""
+    if not retrieved_contexts:
+        return {
+            'answer': "I'm having trouble accessing relevant information right now. For mental health support, please contact 988.",
+            'generation_method': 'fallback_empty',
+            'context_used': 0
+        }
+    
+    # Simple template-based generation
+    best_match = retrieved_contexts[0]
+    response = f"""Based on similar situations in our knowledge base:
+
+{best_match['answer'][:400]}
+
+This guidance comes from our counseling database. For personalized support, please consult a licensed professional.
+
+**Crisis Resources:** 988 (US) | 1800-599-0019 (India)"""
+    
+    return {
+        'answer': response,
+        'generation_method': 'fallback_template',
+        'context_used': len(retrieved_contexts)
+    }
 # ============================================================================
 # GLOBAL CACHED MODEL - LOADED ONCE, REUSED FOREVER
 # ============================================================================
@@ -933,75 +1002,79 @@ rag_retriever = RagRetriever()
 
 def generate_rag_response(user_input, use_web_augmentation=True):
     """
-    📚 ADVANCED RAG - Best of local knowledge + web (with greeting detection)
+    📚 COMPLETE RAG PIPELINE: Retrieval → Generation
     """
     try:
-        # Get enhanced RAG answer (includes greeting detection)
+        # ============================================
+        # PHASE 1: RETRIEVAL (your existing code works!)
+        # ============================================
         result = rag_retriever.get_enhanced_answer(
             user_input,
             use_web=use_web_augmentation,
             use_reranking=True
         )
         
-        # ============================================
-        # Handle greetings differently
-        # ============================================
+        # Handle greetings (keep existing code)
         if result.get('is_greeting'):
             return {
                 'answer': result['answer'],
-                'sources': [{
-                    'title': '💬 Conversational Response',
-                    'url': '#greeting',
-                    'snippet': 'Friendly greeting from NISRA mental health support',
-                    'displayUrl': 'NISRA Greetings',
-                    'source_id': 1,
-                    'favicon': '/static/icons/chat.png',
-                    'type': 'greeting',
-                    'confidence': result.get('confidence', 0.95)
-                }],
+                'sources': [{...}],  # your existing greeting source
                 'type': 'greeting',
                 'confidence': result.get('confidence', 0.95),
                 'is_greeting': True
             }
         
         # ============================================
-        # Format regular mental health query sources
+        # PHASE 2: GENERATION (NEW - uses Ollama!)
+        # ============================================
+        retrieved_contexts = result.get('local_sources', [])
+        
+        # 🚀 THIS IS WHERE THE LLM GENERATES THE ANSWER
+        generated = generate_with_retrieved_context(
+            user_input, 
+            retrieved_contexts,
+            use_ollama=True  # Set False to test fallback
+        )
+        
+        # ============================================
+        # PHASE 3: FORMAT RESPONSE
         # ============================================
         all_sources = []
         
-        # Add local knowledge base sources
-        for i, source in enumerate(result.get('local_sources', []), 1):
+        # Add local sources
+        for i, source in enumerate(retrieved_contexts, 1):
             all_sources.append({
-                'title': f"📚 Counseling Case {i}",
+                'title': f"📚 Knowledge Base Source {i}",
                 'url': '#local',
                 'snippet': source.get('context', '')[:200],
                 'displayUrl': source.get('source_file', 'Knowledge Base'),
                 'source_id': i,
-                'favicon': '/static/icons/database.png',
-                'published_date': '',
                 'type': 'rag_local',
                 'confidence': source.get('score', 0.0)
             })
         
-        # Add web sources (if any)
-        for i, source in enumerate(result.get('web_sources', []), len(result.get('local_sources', [])) + 1):
+        # Add web sources if any
+        for i, source in enumerate(result.get('web_sources', []), len(retrieved_contexts) + 1):
             all_sources.append({
                 'title': source.get('title', 'Web Source'),
                 'url': source.get('url', '#'),
                 'snippet': source.get('snippet', '')[:300],
-                'displayUrl': source.get('url', '').split('/')[2] if '/' in source.get('url', '') else 'web',
                 'source_id': i,
-                'favicon': f"https://www.google.com/s2/favicons?domain={source.get('url', '').split('/')[2] if '/' in source.get('url', '') else 'google.com'}",
-                'published_date': '',
                 'type': 'web_augmented'
             })
         
+        # Add generation metadata
+        final_answer = generated['answer']
+        if generated['generation_method'] == 'ollama_synthesis':
+            final_answer += f"\n\n---\n*✨ Generated using {LLM_MODEL_NAME} with {generated['context_used']} knowledge base sources*"
+        
         return {
-            'answer': result['answer'],
+            'answer': final_answer,
             'sources': all_sources,
-            'type': result.get('type', 'rag_augmented'),
+            'type': 'rag_with_generation',
             'confidence': result.get('confidence', 0.85),
-            'local_count': len(result.get('local_sources', [])),
+            'generation_method': generated['generation_method'],
+            'local_count': len(retrieved_contexts),
             'web_count': len(result.get('web_sources', []))
         }
         
@@ -1010,11 +1083,11 @@ def generate_rag_response(user_input, use_web_augmentation=True):
         import traceback
         traceback.print_exc()
         return {
-            'answer': "I'm here to help! Could you please rephrase that? If you're experiencing a crisis, please contact 988 (Suicide & Crisis Lifeline) immediately.",
+            'answer': "I'm experiencing technical difficulties. For crisis support, call 988.",
             'sources': [],
             'type': 'rag_error',
             'confidence': 0.0
-        }# Main Response Functions
+        }
 def generate_training_response(user_input):
     """🧠 TRAINING MODEL - Fine-tuned AI Response"""
     if ai_generator is None:
