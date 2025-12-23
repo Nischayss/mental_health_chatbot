@@ -1002,80 +1002,146 @@ rag_retriever = RagRetriever()
 
 def generate_rag_response(user_input, use_web_augmentation=True):
     """
-    📚 COMPLETE RAG PIPELINE: Retrieval → Generation
+    📚 COMPLETE RAG PIPELINE: 
+    - Always returns top 2 CSV results
+    - Adds web search ONLY if confidence < 0.6
     """
     try:
         # ============================================
-        # PHASE 1: RETRIEVAL (your existing code works!)
+        # PHASE 1: GET TOP 2 CSV RESULTS (ALWAYS)
         # ============================================
         result = rag_retriever.get_enhanced_answer(
             user_input,
-            use_web=use_web_augmentation,
+            use_web=False,  # We handle web separately based on confidence
             use_reranking=True
         )
         
-        # Handle greetings (keep existing code)
+        # Handle greetings
         if result.get('is_greeting'):
             return {
                 'answer': result['answer'],
-                'sources': [{...}],  # your existing greeting source
+                'sources': [{
+                    'title': '👋 Greeting Response',
+                    'url': '#greeting',
+                    'snippet': 'Natural conversation greeting',
+                    'displayUrl': 'NISRA Greeting',
+                    'source_id': 1,
+                    'type': 'greeting',
+                    'favicon': '/static/icons/greeting.png'
+                }],
                 'type': 'greeting',
                 'confidence': result.get('confidence', 0.95),
                 'is_greeting': True
             }
         
         # ============================================
-        # PHASE 2: GENERATION (NEW - uses Ollama!)
+        # PHASE 2: EXTRACT TOP 2 CSV RESULTS
         # ============================================
-        retrieved_contexts = result.get('local_sources', [])
+        all_retrieved = result.get('local_sources', [])
+        top_2_csv = all_retrieved[:2]  # ✅ Always take top 2
+        confidence = result.get('confidence', 0.0)
         
-        # 🚀 THIS IS WHERE THE LLM GENERATES THE ANSWER
+        print(f"📊 RAG Confidence: {confidence:.2f}")
+        print(f"📚 Top 2 CSV results retrieved")
+        
+        # ============================================
+        # PHASE 3: ADD WEB IF CONFIDENCE LOW
+        # ============================================
+        web_results = []
+        if use_web_augmentation and confidence < 0.6:
+            print(f"⚠️ Low confidence ({confidence:.2f}) - fetching web results...")
+            web_results = rag_retriever.retriever.search_web(user_input, num_results=2)
+            print(f"🌐 Found {len(web_results)} web sources")
+        else:
+            print(f"✅ High confidence ({confidence:.2f}) - skipping web search")
+        
+        # ============================================
+        # PHASE 4: GENERATE ANSWER WITH OLLAMA
+        # ============================================
+        # Use top 2 CSV for generation (web is just supplementary sources)
         generated = generate_with_retrieved_context(
             user_input, 
-            retrieved_contexts,
-            use_ollama=True  # Set False to test fallback
+            top_2_csv,
+            use_ollama=True
         )
         
         # ============================================
-        # PHASE 3: FORMAT RESPONSE
+        # PHASE 5: FORMAT SOURCES
         # ============================================
         all_sources = []
         
-        # Add local sources
-        for i, source in enumerate(retrieved_contexts, 1):
+        # 📚 ADD TOP 2 CSV RESULTS (ALWAYS SHOWN)
+        for i, src in enumerate(top_2_csv, 1):
+                    source_file = src.get('source_file', src.get('metadata', {}).get('source', 'unknown'))
+                    
+                    # Clean up CSV filename for better display
+                    if source_file != 'unknown':
+                        # Remove path and .csv extension
+                        clean_name = source_file.replace('.csv', '').replace('_', ' ').title()
+                    else:
+                        clean_name = 'Counseling Database'
+                    
+                    all_sources.append({
+                        'title': f"📁 {clean_name} (Case {i})",  # Show actual CSV name
+                        'url': '#local',
+                        'snippet': src.get('context', src.get('answer', ''))[:200] + '...',
+                        'displayUrl': source_file,  # Full filename
+                        'source_id': i,
+                        'type': 'rag_local',
+                        'confidence': float(src.get('score', 0.0)),
+                        'favicon': '📊',  # CSV icon
+                        'csv_file': source_file,  # NEW: Explicit CSV filename
+                        'match_score': f"{float(src.get('score', 0.0)):.2%}"  # NEW: Show match %
+                    })
+        
+        # 🌐 ADD WEB RESULTS (ONLY IF LOW CONFIDENCE)
+        for i, web_src in enumerate(web_results, 3):  # Start from source_id 3
             all_sources.append({
-                'title': f"📚 Knowledge Base Source {i}",
-                'url': '#local',
-                'snippet': source.get('context', '')[:200],
-                'displayUrl': source.get('source_file', 'Knowledge Base'),
+                'title': web_src.get('title', 'Web Source'),
+                'url': web_src.get('url', '#'),
+                'snippet': web_src.get('snippet', '')[:250] + '...',
+                'displayUrl': web_src.get('source', 'web'),
                 'source_id': i,
-                'type': 'rag_local',
-                'confidence': source.get('score', 0.0)
+                'type': 'web_augmented',
+                'favicon': f"https://www.google.com/s2/favicons?domain={web_src.get('source', 'web')}"
             })
         
-        # Add web sources if any
-        for i, source in enumerate(result.get('web_sources', []), len(retrieved_contexts) + 1):
-            all_sources.append({
-                'title': source.get('title', 'Web Source'),
-                'url': source.get('url', '#'),
-                'snippet': source.get('snippet', '')[:300],
-                'source_id': i,
-                'type': 'web_augmented'
-            })
-        
-        # Add generation metadata
+        # ============================================
+        # PHASE 6: BUILD FINAL ANSWER
+        # ============================================
         final_answer = generated['answer']
+        
+# Add metadata footer with CSV source details
         if generated['generation_method'] == 'ollama_synthesis':
-            final_answer += f"\n\n---\n*✨ Generated using {LLM_MODEL_NAME} with {generated['context_used']} knowledge base sources*"
+            csv_names = []
+            for src in top_2_csv:
+                source_file = src.get('source_file', 'unknown')
+                if source_file != 'unknown':
+                    clean_name = source_file.replace('.csv', '').replace('_', ' ').title()
+                    csv_names.append(clean_name)
+            
+            if csv_names:
+                csv_list = ', '.join(csv_names)
+                metadata = f"\n\n---\n*✨ Generated using {LLM_MODEL_NAME}\n📚 Sources: {csv_list}"
+            else:
+                metadata = f"\n\n---\n*✨ Generated using {LLM_MODEL_NAME} with {len(top_2_csv)} CSV counseling cases"
+            
+            if web_results:
+                metadata += f"\n🌐 Additional web sources added (low confidence augmentation)*"
+            else:
+                metadata += "*"
+            
+            final_answer += metadata
         
         return {
             'answer': final_answer,
             'sources': all_sources,
             'type': 'rag_with_generation',
-            'confidence': result.get('confidence', 0.85),
+            'confidence': confidence,
             'generation_method': generated['generation_method'],
-            'local_count': len(retrieved_contexts),
-            'web_count': len(result.get('web_sources', []))
+            'csv_count': len(top_2_csv),  # Always 2 (or less if database small)
+            'web_count': len(web_results),  # 0 if high confidence, 2 if low
+            'web_triggered': len(web_results) > 0
         }
         
     except Exception as e:

@@ -495,12 +495,15 @@ class MultiFileRAGRetriever:
         
         results = []
         for idx, score in sorted_results[:topk]:
+            metadata = self.metadata[idx] if idx < len(self.metadata) else {}
+            source_file = metadata.get('source', 'unknown')
+            
             results.append({
                 'answer': self.answers[idx],
                 'context': self.docs[idx],
                 'score': float(score),
-                'metadata': self.metadata[idx] if idx < len(self.metadata) else {},
-                'source_file': self.metadata[idx].get('source', 'unknown') if idx < len(self.metadata) else 'unknown'
+                'metadata': metadata,
+                'source_file': source_file  # ✅ This should already be working
             })
         
         return results
