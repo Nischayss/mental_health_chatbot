@@ -1,4 +1,4 @@
-import { X, Phone, Mail, Globe, Shield, Heart, AlertCircle } from 'lucide-react';
+ import { X, Phone, Mail, Globe, Shield, Heart, AlertCircle } from 'lucide-react';
 
 export default function Resources({ onClose, currentUser }) {
   const emergencyResources = [
@@ -80,12 +80,11 @@ export default function Resources({ onClose, currentUser }) {
     }
   };
 
-  // Get guardian info from localStorage (stored during signup)
+// Get guardian info from currentUser prop (fetched from backend)
   const getGuardianInfo = () => {
-    if (currentUser) {
-      const users = JSON.parse(localStorage.getItem('nisra_user') || '{}');
+    if (currentUser && currentUser.guardian_phone) {
       return {
-        phone: localStorage.getItem('guardianPhone') || users.guardian_phone || 'Not provided',
+        phone: currentUser.guardian_phone || 'Not provided',
         name: 'Guardian'
       };
     }

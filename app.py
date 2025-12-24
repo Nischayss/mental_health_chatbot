@@ -1704,13 +1704,15 @@ def signup():
         session['user_email'] = email
         
         return jsonify({
-            "success": True,
-            "user": {
-                "email": email,
-                "name": name,
-                "gender": gender
-            }
-        })
+                    "success": True,
+                    "user": {
+                        "email": email,
+                        "name": name,
+                        "gender": gender,
+                        "guardian_phone": guardian_phone,
+                        "your_phone": your_phone
+                    }
+                })
         
     except Exception as e:
         print(f"Signup error: {e}")
@@ -1744,7 +1746,9 @@ def login():
             "user": {
                 "email": email,
                 "name": user.get("name", ""),
-                "gender": user.get("gender", "")
+                "gender": user.get("gender", ""),
+                "guardian_phone": user.get("guardian_phone", ""),
+                "your_phone": user.get("your_phone", "")
             }
         })
         
@@ -1772,7 +1776,9 @@ def get_current_user():
         "user": {
             "email": email,
             "name": user.get("name", ""),
-            "gender": user.get("gender", "")
+            "gender": user.get("gender", ""),
+            "guardian_phone": user.get("guardian_phone", ""),
+            "your_phone": user.get("your_phone", "")
         }
     })
 
