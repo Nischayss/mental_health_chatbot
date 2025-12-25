@@ -52,9 +52,28 @@ CHAT_HISTORY_DIR.mkdir(exist_ok=True)
 def load_users():
     """Load users from JSON file"""
     if USERS_FILE.exists():
-        with open(USERS_FILE, 'r') as f:
-            return json.load(f)
-    return {}
+        try:
+            with open(USERS_FILE, 'r') as f:
+                content = f.read().strip()
+                if not content:
+                    print("⚠️ users.json is empty, creating empty database")
+                    with open(USERS_FILE, 'w') as fw:
+                        json.dump({}, fw)
+                    return {}
+                return json.loads(content)
+        except json.JSONDecodeError as e:
+            print(f"⚠️ users.json corrupted: {e}. Reinitializing...")
+            with open(USERS_FILE, 'w') as fw:
+                json.dump({}, fw)
+            return {}
+        except Exception as e:
+            print(f"⚠️ Error loading users: {e}")
+            return {}
+    else:
+        print("⚠️ users.json doesn't exist, creating...")
+        with open(USERS_FILE, 'w') as f:
+            json.dump({}, f)
+        return {}
 
 def save_users(users):
     """Save users to JSON file"""
@@ -1667,8 +1686,13 @@ def send_verification():
         if not email or not is_valid_email(email):
             return jsonify({"error": "Valid email required"}), 400
         
-        # Check if email already exists
-        users = load_users()
+        # Check if email already exists (SAFE LOADING)
+        try:
+            users = load_users()
+        except Exception as load_error:
+            print(f"⚠️ Database load error in send_verification: {load_error}")
+            users = {}  # ✅ Treat as empty database
+        
         if email in users:
             return jsonify({"error": "Email already registered"}), 409
         
@@ -1691,7 +1715,7 @@ def send_verification():
         return jsonify({
             "success": True,
             "message": "Verification code sent to your email",
-            "dev_code": code if not SMTP_EMAIL else None  # Only show in dev mode
+            "dev_code": code if not SMTP_EMAIL else None
         })
         
     except Exception as e:

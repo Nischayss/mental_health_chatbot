@@ -152,15 +152,20 @@ const handleSendVerification = async (e) => {
       return;
     }
 
-    // Check if email exists
-    const checkResponse = await axios.post(`${API_URL}/auth/check-email`, {
-      email: formData.email
-    });
+    // Check if email exists (handle gracefully if database doesn't exist)
+    try {
+      const checkResponse = await axios.post(`${API_URL}/auth/check-email`, {
+        email: formData.email
+      });
 
-    if (checkResponse.data.exists) {
-      setError('This email is already registered. Please login instead.');
-      setLoading(false);
-      return;
+      if (checkResponse.data.exists) {
+        setError('This email is already registered. Please login instead.');
+        setLoading(false);
+        return;
+      }
+    } catch (checkError) {
+      console.warn('Email check failed, proceeding:', checkError);
+      // Continue with verification even if check fails
     }
 
     // Send verification code
@@ -176,9 +181,11 @@ const handleSendVerification = async (e) => {
       
       if (response.data.dev_code) {
         console.log('🔐 Dev Code:', response.data.dev_code);
+        alert(`DEV MODE - Your verification code is: ${response.data.dev_code}`);
       }
     }
   } catch (err) {
+    console.error('Verification error:', err);
     setError(err.response?.data?.error || 'Failed to send verification code');
   } finally {
     setLoading(false);
