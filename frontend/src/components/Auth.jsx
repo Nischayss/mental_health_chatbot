@@ -246,12 +246,12 @@ const handleResendCode = async () => {
 };
 
 const renderEmailVerification = () => (
-  <div className="w-full max-w-md">
+  <div className={`w-full ${view === 'signup' ? 'max-w-[580px]' : 'max-w-md'}`}>
     <button onClick={() => setView('signup')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6">
       <ArrowLeft className="w-4 h-4" /> Back
     </button>
 
-    <div className="text-center mb-8">
+    <div className={`text-center ${view === 'signup' ? 'mb-6' : 'mb-8'}`}>
       <h1 className="text-3xl font-bold mb-2">Verify Your Email</h1>
       <p className="text-gray-600">Code sent to <strong>{emailToVerify}</strong></p>
     </div>
@@ -294,7 +294,7 @@ const renderEmailVerification = () => (
 );
 
   const renderForgotPassword = () => (
-    <div className="w-full max-w-md">
+    <div className={`w-full ${view === 'signup' ? 'max-w-[580px]' : 'max-w-md'}`}>
       <button
         onClick={() => setView('login')}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition"
@@ -303,7 +303,7 @@ const renderEmailVerification = () => (
         Back to Login
       </button>
 
-      <div className="text-center mb-8">
+      <div className={`text-center ${view === 'signup' ? 'mb-6' : 'mb-8'}`}>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Forgot Password</h1>
         <p className="text-gray-600">Choose how to reset your password</p>
       </div>
@@ -347,7 +347,7 @@ const renderEmailVerification = () => (
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">
             {resetMethod === 'email' ? 'Email Address' : 'Phone Number'}
           </label>
           <input
@@ -355,7 +355,7 @@ const renderEmailVerification = () => (
             name={resetMethod === 'email' ? 'email' : 'yourPhone'}
             value={resetMethod === 'email' ? formData.email : formData.yourPhone}
             onChange={handleChange}
-            className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400"
+            className={`w-full px-4 ${view === 'signup' ? 'py-2.5' : 'py-3'} border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400`}
             placeholder={resetMethod === 'email' ? 'Enter your email' : 'Enter your phone number'}
             required
           />
@@ -364,7 +364,7 @@ const renderEmailVerification = () => (
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-black text-white py-3.5 rounded-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`w-full bg-black text-white ${view === 'signup' ? 'py-3' : 'py-3.5'} rounded-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {loading ? 'Sending...' : 'Send Reset Code'}
         </button>
@@ -373,7 +373,7 @@ const renderEmailVerification = () => (
   );
 
   const renderResetPassword = () => (
-    <div className="w-full max-w-md">
+    <div className={`w-full ${view === 'signup' ? 'max-w-[580px]' : 'max-w-md'}`}>
       <button
         onClick={() => setView('forgot')}
         className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition"
@@ -382,7 +382,7 @@ const renderEmailVerification = () => (
         Back
       </button>
 
-      <div className="text-center mb-8">
+      <div className={`text-center ${view === 'signup' ? 'mb-6' : 'mb-8'}`}>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Reset Password</h1>
         <p className="text-gray-600">Enter the code sent to your {resetMethod}</p>
       </div>
@@ -401,7 +401,7 @@ const renderEmailVerification = () => (
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Verification Code</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Verification Code</label>
           <input
             type="text"
             value={verificationCode}
@@ -414,20 +414,20 @@ const renderEmailVerification = () => (
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
           <input
             type={showPassword ? 'text' : 'password'}
             name="newPassword"
             value={formData.newPassword}
             onChange={handleChange}
-            className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400"
+            className={`w-full px-4 ${view === 'signup' ? 'py-2.5' : 'py-3'} border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400`}
             placeholder="Enter new password"
             required
           />
         </div>
 
         <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
           <input
             type={showPassword ? 'text' : 'password'}
             name="confirmPassword"
@@ -449,7 +449,7 @@ const renderEmailVerification = () => (
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-black text-white py-3.5 rounded-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`w-full bg-black text-white ${view === 'signup' ? 'py-3' : 'py-3.5'} rounded-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {loading ? 'Resetting...' : 'Reset Password'}
         </button>
@@ -524,8 +524,8 @@ if (view === 'verify-email') {
       </div>
 
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
+        <div className={`w-full ${view === 'signup' ? 'max-w-[580px]' : 'max-w-md'}`}>
+          <div className={`text-center ${view === 'signup' ? 'mb-6' : 'mb-8'}`}>
             <div>
               <span className="text-4xl font-bold text-black tracking-tight">NISRA</span>
             </div>
@@ -549,11 +549,11 @@ if (view === 'verify-email') {
             </div>
           )}
 
-          <form onSubmit={view === 'signup' ? handleSendVerification : handleSubmit} className="space-y-5">
+          <form onSubmit={view === 'signup' ? handleSendVerification : handleSubmit} className={view === 'signup' ? 'space-y-4' : 'space-y-5'}>
             {view === 'signup' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
                   <input
                     type="text"
                     name="name"
@@ -561,14 +561,14 @@ if (view === 'verify-email') {
                     onChange={handleChange}
                     onFocus={() => setFocusedField('name')}
                     onBlur={() => setFocusedField(null)}
-                    className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400"
+                    className={`w-full px-4 ${view === 'signup' ? 'py-2.5' : 'py-3'} border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400`}
                     placeholder="Enter your full name"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Gender</label>
                   <select
                     name="gender"
                     value={formData.gender}
@@ -587,7 +587,7 @@ if (view === 'verify-email') {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
               <input
                 type="email"
                 name="email"
@@ -595,14 +595,14 @@ if (view === 'verify-email') {
                 onChange={handleChange}
                 onFocus={() => setFocusedField('email')}
                 onBlur={() => setFocusedField(null)}
-                className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400"
+                className={`w-full px-4 ${view === 'signup' ? 'py-2.5' : 'py-3'} border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400`}
                 placeholder="Enter your email"
                 required
               />
             </div>
 
             <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
@@ -626,25 +626,25 @@ if (view === 'verify-email') {
             {view === 'signup' && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Guardian Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Guardian Phone</label>
                   <input
                     type="tel"
                     name="guardianPhone"
                     value={formData.guardianPhone}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400"
+                    className={`w-full px-4 ${view === 'signup' ? 'py-2.5' : 'py-3'} border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400`}
                     placeholder="+1 (555) 000-0000"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Your Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Your Phone</label>
                   <input
                     type="tel"
                     name="yourPhone"
                     value={formData.yourPhone}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400"
+                    className={`w-full px-4 ${view === 'signup' ? 'py-2.5' : 'py-3'} border-b-2 border-gray-300 focus:border-purple-600 outline-none transition-all bg-transparent text-gray-900 placeholder-gray-400`}
                     placeholder="+1 (555) 000-0000"
                     required
                   />
@@ -677,13 +677,13 @@ if (view === 'verify-email') {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-black text-white py-3.5 rounded-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full bg-black text-white ${view === 'signup' ? 'py-3' : 'py-3.5'} rounded-lg font-semibold hover:bg-gray-800 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {loading ? (view === 'login' ? 'Logging in...' : 'Signing up...') : (view === 'login' ? 'Log In' : 'Sign Up')}
             </button>
           </form>
 
-          <p className="text-center mt-6 text-sm text-gray-600">
+          <p className={`text-center ${view === 'signup' ? 'mt-4' : 'mt-6'} text-sm text-gray-600`}>
             {view === 'login' ? "Don't have an account? " : "Already have an account? "}
             <button
               onClick={() => {
