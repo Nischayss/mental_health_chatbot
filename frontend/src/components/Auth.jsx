@@ -13,7 +13,9 @@ export default function Auth({ onLogin }) {
   const [success, setSuccess] = useState('');
   const [resetMethod, setResetMethod] = useState('email'); // 'email' or 'phone'
   const [verificationCode, setVerificationCode] = useState('');
-  
+  const [emailToVerify, setEmailToVerify] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -40,6 +42,14 @@ export default function Auth({ onLogin }) {
     };
     checkAuth();
   }, []);
+
+  // Add this AFTER the checkAuth useEffect
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -126,6 +136,162 @@ export default function Auth({ onLogin }) {
     setError('');
     setSuccess('');
   };
+
+  // Send verification code
+const handleSendVerification = async (e) => {
+  e.preventDefault();
+  setError('');
+  setSuccess('');
+  setLoading(true);
+
+  try {
+    if (!formData.name || !formData.gender || !formData.email || !formData.password || 
+        !formData.guardianPhone || !formData.yourPhone) {
+      setError('Please fill in all required fields');
+      setLoading(false);
+      return;
+    }
+
+    // Check if email exists
+    const checkResponse = await axios.post(`${API_URL}/auth/check-email`, {
+      email: formData.email
+    });
+
+    if (checkResponse.data.exists) {
+      setError('This email is already registered. Please login instead.');
+      setLoading(false);
+      return;
+    }
+
+    // Send verification code
+    const response = await axios.post(`${API_URL}/auth/send-verification`, {
+      email: formData.email
+    });
+
+    if (response.data.success) {
+      setEmailToVerify(formData.email);
+      setView('verify-email');
+      setSuccess('Verification code sent to your email!');
+      setResendTimer(60);
+      
+      if (response.data.dev_code) {
+        console.log('🔐 Dev Code:', response.data.dev_code);
+      }
+    }
+  } catch (err) {
+    setError(err.response?.data?.error || 'Failed to send verification code');
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Verify code and complete signup
+const handleVerifyAndSignup = async (e) => {
+  e.preventDefault();
+  setError('');
+  setSuccess('');
+  setLoading(true);
+
+  try {
+    if (verificationCode.length !== 6) {
+      setError('Please enter the 6-digit code');
+      setLoading(false);
+      return;
+    }
+
+    // Verify code then signup
+    const response = await axios.post(`${API_URL}/auth/signup`, {
+      email: formData.email,
+      password: formData.password,
+      name: formData.name,
+      gender: formData.gender,
+      guardianPhone: formData.guardianPhone,
+      yourPhone: formData.yourPhone,
+      verificationCode: verificationCode
+    });
+
+    if (response.data.success) {
+      const userData = response.data.user;
+      localStorage.setItem('nisra_user', JSON.stringify(userData));
+      setSuccess('Account created! Redirecting...');
+      setTimeout(() => onLogin(userData), 1500);
+    }
+  } catch (err) {
+    setError(err.response?.data?.error || 'Verification failed');
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Resend code
+const handleResendCode = async () => {
+  if (resendTimer > 0) return;
+  setLoading(true);
+
+  try {
+    const response = await axios.post(`${API_URL}/auth/send-verification`, {
+      email: emailToVerify
+    });
+
+    if (response.data.success) {
+      setSuccess('New code sent!');
+      setResendTimer(60);
+      setVerificationCode('');
+    }
+  } catch (err) {
+    setError('Failed to resend code');
+  } finally {
+    setLoading(false);
+  }
+};
+
+const renderEmailVerification = () => (
+  <div className="w-full max-w-md">
+    <button onClick={() => setView('signup')} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6">
+      <ArrowLeft className="w-4 h-4" /> Back
+    </button>
+
+    <div className="text-center mb-8">
+      <h1 className="text-3xl font-bold mb-2">Verify Your Email</h1>
+      <p className="text-gray-600">Code sent to <strong>{emailToVerify}</strong></p>
+    </div>
+
+    {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg"><p className="text-sm text-red-600">{error}</p></div>}
+    {success && <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg"><p className="text-sm text-green-600">{success}</p></div>}
+
+    <form onSubmit={handleVerifyAndSignup} className="space-y-5">
+      <input
+        type="text"
+        value={verificationCode}
+        onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+        className="w-full px-4 py-4 border-2 border-gray-300 focus:border-purple-600 outline-none rounded-lg text-center text-3xl tracking-[0.5em] font-bold"
+        placeholder="000000"
+        maxLength="6"
+        required
+        autoFocus
+      />
+
+      <button
+        type="submit"
+        disabled={loading || verificationCode.length !== 6}
+        className="w-full bg-purple-600 text-white py-3.5 rounded-lg font-semibold hover:bg-purple-700 disabled:opacity-50"
+      >
+        {loading ? 'Verifying...' : 'Verify & Create Account'}
+      </button>
+
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={handleResendCode}
+          disabled={resendTimer > 0}
+          className="text-sm text-purple-600 font-semibold disabled:text-gray-400"
+        >
+          {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}
+        </button>
+      </div>
+    </form>
+  </div>
+);
 
   const renderForgotPassword = () => (
     <div className="w-full max-w-md">
@@ -308,6 +474,22 @@ export default function Auth({ onLogin }) {
     );
   }
 
+if (view === 'verify-email') {
+  return (
+    <div className="min-h-screen flex bg-white overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-white items-center justify-center p-12 relative">
+        <svg width="100%" height="100%" viewBox="0 0 800 900" fill="none" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
+          <ellipse cx="700" cy="80" rx="180" ry="180" fill="#FF9B85" opacity="0.9" />
+          <path d="M 150 180 Q 200 80, 300 120 Q 350 150, 320 220 Q 280 280, 180 260 Q 100 240, 150 180 Z" fill="#A89BFF" opacity="0.8" />
+        </svg>
+      </div>
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+        {renderEmailVerification()}
+      </div>
+    </div>
+  );
+}
+
   if (view === 'reset') {
     return (
       <div className="min-h-screen flex bg-white overflow-hidden">
@@ -367,7 +549,7 @@ export default function Auth({ onLogin }) {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={view === 'signup' ? handleSendVerification : handleSubmit} className="space-y-5">
             {view === 'signup' && (
               <>
                 <div>

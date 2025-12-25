@@ -1553,6 +1553,196 @@ def forgot_password():
         print(f"Forgot password error: {e}")
         return jsonify({"error": "Failed to send reset code"}), 500
 
+# Add this global dictionary at the top with other globals (after reset_codes = {})
+verification_codes = {}  # Store email verification codes
+
+# Add this helper function after send_guardian_alert_email()
+def is_valid_email(email):
+    """Validate email format"""
+    import re
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def send_verification_email(email, code):
+    """Send verification code for new user signup"""
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        print(f"📧 Dev Mode - Verification code for {email}: {code}")
+        return True  # Return True in dev mode
+    
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = SMTP_EMAIL
+        msg['To'] = email
+        msg['Subject'] = "NISRA - Verify Your Email"
+        
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #6366f1; margin: 0;">💙 NISRA</h1>
+                    <p style="color: #666; margin-top: 10px;">Mental Health Support Assistant</p>
+                </div>
+                
+                <h2 style="color: #333;">Welcome to NISRA!</h2>
+                <p style="color: #666; line-height: 1.6;">
+                    Thank you for signing up. Please use the verification code below to complete your registration:
+                </p>
+                
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 12px; text-align: center; margin: 30px 0;">
+                    <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">Your Verification Code</p>
+                    <p style="font-size: 42px; font-weight: bold; color: white; margin: 0; letter-spacing: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">{code}</p>
+                </div>
+                
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                    <p style="color: #856404; margin: 0; font-size: 14px;">
+                        ⏰ <strong>This code expires in 10 minutes.</strong><br>
+                        If you didn't request this, please ignore this email.
+                    </p>
+                </div>
+                
+                <div style="border-top: 1px solid #eee; margin-top: 30px; padding-top: 20px; text-align: center;">
+                    <p style="color: #999; font-size: 12px; margin: 0;">
+                        © 2024 NISRA - Mental Health Support<br>
+                        This is an automated message, please do not reply.
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        
+        print(f"✅ Verification email sent to {email}")
+        return True
+    except Exception as e:
+        print(f"❌ Verification email error: {e}")
+        return False
+
+
+@app.route("/auth/check-email", methods=["POST"])
+def check_email():
+    """Check if email already exists and is valid"""
+    try:
+        data = request.json
+        email = data.get("email", "").strip().lower()
+        
+        if not email:
+            return jsonify({"error": "Email required"}), 400
+        
+        if not is_valid_email(email):
+            return jsonify({"error": "Invalid email format"}), 400
+        
+        users = load_users()
+        
+        if email in users:
+            return jsonify({
+                "exists": True,
+                "message": "This email is already registered. Please login instead."
+            })
+        
+        return jsonify({
+            "exists": False,
+            "message": "Email is available"
+        })
+        
+    except Exception as e:
+        print(f"Check email error: {e}")
+        return jsonify({"error": "Failed to check email"}), 500
+
+@app.route("/auth/send-verification", methods=["POST"])
+def send_verification():
+    """Send verification code to new user's email"""
+    try:
+        data = request.json
+        email = data.get("email", "").strip().lower()
+        
+        if not email or not is_valid_email(email):
+            return jsonify({"error": "Valid email required"}), 400
+        
+        # Check if email already exists
+        users = load_users()
+        if email in users:
+            return jsonify({"error": "Email already registered"}), 409
+        
+        # Generate 6-digit code
+        code = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+        
+        # Store code with expiration
+        verification_codes[email] = {
+            'code': code,
+            'expires': datetime.now() + timedelta(minutes=10),
+            'attempts': 0
+        }
+        
+        # Send verification email
+        success = send_verification_email(email, code)
+        
+        if not success and SMTP_EMAIL and SMTP_PASSWORD:
+            return jsonify({"error": "Failed to send verification email"}), 500
+        
+        return jsonify({
+            "success": True,
+            "message": "Verification code sent to your email",
+            "dev_code": code if not SMTP_EMAIL else None  # Only show in dev mode
+        })
+        
+    except Exception as e:
+        print(f"Send verification error: {e}")
+        return jsonify({"error": "Failed to send verification code"}), 500
+
+@app.route("/auth/verify-code", methods=["POST"])
+def verify_code():
+    """Verify the email verification code"""
+    try:
+        data = request.json
+        email = data.get("email", "").strip().lower()
+        code = data.get("code", "").strip()
+        
+        if not email or not code:
+            return jsonify({"error": "Email and code required"}), 400
+        
+        # Check if code exists
+        if email not in verification_codes:
+            return jsonify({"error": "Invalid or expired verification code"}), 400
+        
+        stored_data = verification_codes[email]
+        
+        # Check expiration
+        if datetime.now() > stored_data['expires']:
+            del verification_codes[email]
+            return jsonify({"error": "Verification code expired. Please request a new one."}), 400
+        
+        # Check attempts (prevent brute force)
+        if stored_data['attempts'] >= 5:
+            del verification_codes[email]
+            return jsonify({"error": "Too many incorrect attempts. Please request a new code."}), 429
+        
+        # Verify code
+        if stored_data['code'] != code:
+            verification_codes[email]['attempts'] += 1
+            remaining = 5 - verification_codes[email]['attempts']
+            return jsonify({
+                "error": f"Invalid code. {remaining} attempts remaining."
+            }), 400
+        
+        # Code is valid - don't delete yet, signup will use it
+        return jsonify({
+            "success": True,
+            "message": "Email verified successfully"
+        })
+        
+    except Exception as e:
+        print(f"Verify code error: {e}")
+        return jsonify({"error": "Verification failed"}), 500
+
 @app.route("/auth/reset-password", methods=["POST"])
 def reset_password():
     """Verify code and reset password"""
@@ -1668,6 +1858,7 @@ def home():
             "health": "/health"
         }
     })
+    
 @app.route("/auth/signup", methods=["POST"])
 def signup():
     try:
@@ -1678,9 +1869,25 @@ def signup():
         gender = data.get("gender", "")
         guardian_phone = data.get("guardianPhone", "")
         your_phone = data.get("yourPhone", "")
+        verification_code = data.get("verificationCode", "")
         
         if not email or not password:
             return jsonify({"error": "Email and password required"}), 400
+        
+        # Verify email code before allowing signup
+        if email not in verification_codes:
+            return jsonify({"error": "Please verify your email first"}), 400
+        
+        stored_data = verification_codes[email]
+        
+        # Check if code expired
+        if datetime.now() > stored_data['expires']:
+            del verification_codes[email]
+            return jsonify({"error": "Verification expired. Please start again."}), 400
+        
+        # Verify the code matches
+        if stored_data['code'] != verification_code:
+            return jsonify({"error": "Invalid verification code"}), 400
         
         users = load_users()
         
@@ -1695,29 +1902,33 @@ def signup():
             "gender": gender,
             "guardian_phone": guardian_phone,
             "your_phone": your_phone,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
+            "email_verified": True  # Mark as verified
         }
         
         save_users(users)
+        
+        # Clear verification code after successful signup
+        del verification_codes[email]
         
         # Set session
         session['user_email'] = email
         
         return jsonify({
-                    "success": True,
-                    "user": {
-                        "email": email,
-                        "name": name,
-                        "gender": gender,
-                        "guardian_phone": guardian_phone,
-                        "your_phone": your_phone
-                    }
-                })
+            "success": True,
+            "user": {
+                "email": email,
+                "name": name,
+                "gender": gender,
+                "guardian_phone": guardian_phone,
+                "your_phone": your_phone
+            }
+        })
         
     except Exception as e:
         print(f"Signup error: {e}")
         return jsonify({"error": "Signup failed"}), 500
-
+    
 @app.route("/auth/login", methods=["POST"])
 def login():
     try:
