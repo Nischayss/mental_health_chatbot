@@ -7,7 +7,7 @@ import Resources from './Resources';
 import GamesHub from './GamesHub';
 import Exercise from './Exercise.jsx';
 import Sidebar from './components/ui/Sidebar';
-import { Search, Paperclip, Mic, Send, Moon, Sun, Heart, X, Bookmark } from 'lucide-react';
+import { Search, Paperclip, Mic, Send, Moon, Sun, Heart, X, Bookmark, Pin, MessageSquare, Trash2, History } from 'lucide-react';
 import CrisisModal from './components/CrisisModal';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -111,10 +111,14 @@ function App() {
   };
 
   const startNewChat = () => {
+    // ✅ Save current chat before starting new one
+    if (messages.length > 0 && !activeChatId) {
+      saveToHistory(messages);
+    }
+    
     setMessages([]);
     setActiveChatId(null);
   };
-
   const selectChat = (chatId) => {
     setActiveChatId(chatId);
     const selectedChat = chatHistory.find(chat => chat.id === chatId);
@@ -161,17 +165,24 @@ function App() {
   if (!input.trim() || loading) return;
 
   const userMsg = { role: 'user', content: input };
-  setMessages(prev => [...prev, userMsg]);
   const currentInput = input; // Save input before clearing
   setInput('');
   setLoading(true);
+
+  // ✅ FIX: Create chat ID BEFORE first message if it doesn't exist
+  if (!activeChatId && messages.length === 0) {
+    const newChatId = Date.now();
+    setActiveChatId(newChatId);
+  }
+
+  setMessages(prev => [...prev, userMsg]);
 
   try {
     const response = await axios.post('http://127.0.0.1:5000/chat', {
       message: currentInput,
       response_type: selectedModel
     }, {
-      withCredentials: true // Important for session cookies
+      withCredentials: true
     });
 
     const responseData = response.data.response;
@@ -227,20 +238,71 @@ function App() {
     localStorage.setItem(userKey, JSON.stringify(updated));
   };
 
-  const saveToHistory = (msgs) => {
-    if (msgs.length === 0 || !currentUser) return;
-    const historyKey = `nisra_history_${currentUser.email}`;
-    const newHistory = [...chatHistory, {
-      id: Date.now(),
-      messages: msgs,
-      timestamp: new Date().toISOString()
-    }];
-    setChatHistory(newHistory);
-    localStorage.setItem(historyKey, JSON.stringify(newHistory));
-  };
+const saveToHistory = (msgs) => {
+  if (msgs.length === 0 || !currentUser) return;
+  const historyKey = `nisra_history_${currentUser.email}`;
+  
+  // ✅ ALWAYS update if activeChatId exists, otherwise create new
+  const updatedHistory = activeChatId
+    ? chatHistory.map(chat => 
+        chat.id === activeChatId 
+          ? { ...chat, messages: msgs, timestamp: new Date().toISOString() }
+          : chat
+      )
+    : [...chatHistory, {
+        id: activeChatId || Date.now(), // Use existing ID or create new
+        title: generateChatTitle(msgs),
+        messages: msgs,
+        timestamp: new Date().toISOString(),
+        isPinned: false
+      }];
+  
+  setChatHistory(updatedHistory);
+  localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
+};
+
+// ✅ IMPROVED: Generate smart chat title from first user message
+const generateChatTitle = (msgs) => {
+  const firstUserMsg = msgs.find(m => m.role === 'user');
+  if (!firstUserMsg) return 'New Chat';
+  
+  let content = firstUserMsg.content.trim();
+  
+  // Remove extra whitespace and line breaks
+  content = content.replace(/\s+/g, ' ');
+  
+  // If it's a greeting, use generic title
+  const greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
+  if (greetings.includes(content.toLowerCase())) {
+    return 'Chat with NISRA';
+  }
+  
+  // Take first sentence or 40 characters (whichever is shorter)
+  const firstSentence = content.split(/[.!?]/)[0];
+  const title = firstSentence.length <= 40 
+    ? firstSentence 
+    : content.slice(0, 40);
+  
+  // Add ellipsis only if we truncated
+  return title.length < content.length ? title + '...' : title;
+};
+
+// ✅ NEW: Toggle pin status
+const togglePinChat = (chatId) => {
+  if (!currentUser) return;
+  const historyKey = `nisra_history_${currentUser.email}`;
+  
+  const updated = chatHistory.map(chat =>
+    chat.id === chatId ? { ...chat, isPinned: !chat.isPinned } : chat
+  );
+  
+  setChatHistory(updated);
+  localStorage.setItem(historyKey, JSON.stringify(updated));
+};
 
   const loadHistorySession = (session) => {
     setMessages(session.messages);
+    setActiveChatId(session.id); // ✅ Set active chat ID when loading
     setShowModal(null);
   };
 
@@ -277,6 +339,7 @@ function App() {
         selectChat={selectChat}
         currentUser={currentUser}
         onLogout={handleLogout}
+        togglePinChat={togglePinChat} // ✅ NEW
       />
 
       <main className="flex-1 flex flex-col">
@@ -494,7 +557,7 @@ function App() {
       )}
       {showModal === 'history' && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#16181f] rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto border border-gray-300 dark:border-gray-700">
+          <div className="bg-white dark:bg-[#16181f] rounded-xl p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto border border-gray-300 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">📜 Chat History</h2>
               <button onClick={() => setShowModal(null)} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg">
@@ -502,27 +565,118 @@ function App() {
               </button>
             </div>
             {chatHistory.length === 0 ? (
-              <p className="text-gray-600 dark:text-gray-400">No chat history yet.</p>
+              <p className="text-gray-600 dark:text-gray-400 text-center py-8">No chat history yet. Start a conversation!</p>
             ) : (
               <div className="space-y-3">
-                {chatHistory.map((session) => (
-                  <div key={session.id} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900 dark:text-white mb-1">{session.messages.length} messages</p>
-                        <p className="text-xs text-gray-500">{new Date(session.timestamp).toLocaleString()}</p>
-                      </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => loadHistorySession(session)} className="px-3 py-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded text-sm">
-                          Load
-                        </button>
-                        <button onClick={() => deleteHistorySession(session.id)} className="p-1 hover:bg-gray-300 dark:hover:bg-gray-700 rounded">
-                          <X className="w-4 h-4" />
-                        </button>
+                {/* Pinned Chats Section */}
+                {chatHistory.filter(c => c.isPinned).length > 0 && (
+                  <>
+                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                      <Pin className="w-4 h-4" />
+                      <span>Pinned Chats</span>
+                    </div>
+                    {chatHistory
+                      .filter(c => c.isPinned)
+                      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                      .map((session) => (
+                        <div key={session.id} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                          <div className="flex justify-between items-start gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <MessageSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                                <p className="font-semibold text-gray-900 dark:text-white truncate">
+                                  {session.title || 'Untitled Chat'}
+                                </p>
+                                <Pin className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                              </div>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {session.messages?.length || 0} messages • {new Date(session.timestamp).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="flex gap-2 flex-shrink-0">
+                              <button 
+                                onClick={() => loadHistorySession(session)} 
+                                className="px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded text-sm font-medium hover:shadow-lg transition"
+                              >
+                                Load
+                              </button>
+                              <button 
+                                onClick={() => togglePinChat(session.id)} 
+                                className="p-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-200 transition" 
+                                title="Unpin"
+                              >
+                                <Pin className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  if (window.confirm('Delete this chat?')) {
+                                    deleteHistorySession(session.id);
+                                  }
+                                }} 
+                                className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded hover:bg-red-200 transition" 
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    <div className="border-t border-gray-300 dark:border-gray-600 my-4"></div>
+                  </>
+                )}
+
+                {/* Recent Chats Section */}
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                  <History className="w-4 h-4" />
+                  <span>Recent Chats</span>
+                </div>
+                {chatHistory
+                  .filter(c => !c.isPinned)
+                  .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                  .map((session) => (
+                    <div key={session.id} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+                      <div className="flex justify-between items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <MessageSquare className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                            <p className="font-semibold text-gray-900 dark:text-white truncate">
+                              {session.title || 'Untitled Chat'}
+                            </p>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {session.messages?.length || 0} messages • {new Date(session.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
+                          <button 
+                            onClick={() => loadHistorySession(session)} 
+                            className="px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded text-sm font-medium hover:shadow-lg transition"
+                          >
+                            Load
+                          </button>
+                          <button 
+                            onClick={() => togglePinChat(session.id)} 
+                            className="p-1.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-300 transition" 
+                            title="Pin"
+                          >
+                            <Pin className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if (window.confirm('Delete this chat?')) {
+                                deleteHistorySession(session.id);
+                              }
+                            }} 
+                            className="p-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded hover:bg-red-200 transition" 
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </div>
