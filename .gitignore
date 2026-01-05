@@ -57,7 +57,6 @@ trained_model/*.ckpt
 
 # User data (NEVER UPLOAD!)
 user_data/
-document_store/
 faiss_index/
 
 # Frontend
