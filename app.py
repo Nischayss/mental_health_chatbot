@@ -123,13 +123,13 @@ BASE_MODEL_PATH = os.environ.get("MODEL_BASE_PATH", "./TinyLlama-1.1B-Chat-v1.0"
 ADAPTER_PATH = os.environ.get("ADAPTER_PATH", "./trained_model")
 
 # Initialize Gemini API with free tier management
-# Initialize Ollama API
-LLM_MODEL_NAME = os.environ.get("LLM_MODEL_NAME", "llama3.2-vision:latest")
-LLM_API_URL = os.environ.get("LLM_API_URL", "https://chat.ivislabs.in/api/chat/completions")
+# Initialize Grok API (xAI)
+LLM_MODEL_NAME = os.environ.get("LLM_MODEL_NAME", "llama-3.3-70b-versatile")
+LLM_API_URL = os.environ.get("LLM_API_URL", "https://api.groq.com/openai/v1/chat/completions")
 LLM_API_KEY = os.environ.get("LLM_API_KEY")
 
-ollama_client = None
-ollama_rate_limiter = {
+grok_client = None
+grok_rate_limiter = {
     'last_request_time': 0,
     'request_count_minute': 0,
     'request_count_day': 0,
@@ -139,73 +139,73 @@ ollama_rate_limiter = {
 
 if LLM_API_URL and LLM_API_KEY:
     try:
-        ollama_client = {
+        grok_client = {
             'api_url': LLM_API_URL,
             'api_key': LLM_API_KEY,
             'model': LLM_MODEL_NAME
         }
-        print(f"✅ Ollama API initialized - Model: {LLM_MODEL_NAME}")
+        print(f"✅ Grok API initialized - Model: {LLM_MODEL_NAME}")
     except Exception as e:
-        print(f"⚠️ Ollama API initialization failed: {e}")
-        ollama_client = None
+        print(f"⚠️ Grok API initialization failed: {e}")
+        grok_client = None
 else:
-    print("⚠️ Ollama API not configured - using fallback responses")
+    print("⚠️ Grok API not configured - using fallback responses")
 
-def check_ollama_rate_limit():
-    """Check if we can make an Ollama request"""
-    if not ollama_client:
+def check_grok_rate_limit():
+    """Check if we can make an Grok request"""
+    if not grok_client:
         return False
     
     current_time = time.time()
     
     # Reset day counter if 24 hours passed
-    if current_time - ollama_rate_limiter['day_start'] > 86400:
-        ollama_rate_limiter['request_count_day'] = 0
-        ollama_rate_limiter['day_start'] = current_time
-        print("🔄 Daily Ollama counter reset")
+    if current_time - grok_rate_limiter['day_start'] > 86400:
+        grok_rate_limiter['request_count_day'] = 0
+        grok_rate_limiter['day_start'] = current_time
+        print("🔄 Daily Grok counter reset")
     
     # Reset minute counter if 60 seconds passed
-    if current_time - ollama_rate_limiter['minute_start'] > 60:
-        ollama_rate_limiter['request_count_minute'] = 0
-        ollama_rate_limiter['minute_start'] = current_time
+    if current_time - grok_rate_limiter['minute_start'] > 60:
+        grok_rate_limiter['request_count_minute'] = 0
+        grok_rate_limiter['minute_start'] = current_time
     
-    # Check limits (adjust as needed for your Ollama instance)
-    if ollama_rate_limiter['request_count_day'] >= 10000:
-        print("⚠️ Ollama daily limit reached")
+    # Check limits (adjust as needed for your Grok instance)
+    if grok_rate_limiter['request_count_day'] >= 10000:
+        print("⚠️ Grok daily limit reached")
         return False
     
-    if ollama_rate_limiter['request_count_minute'] >= 60:
-        print("⚠️ Ollama minute limit reached")
+    if grok_rate_limiter['request_count_minute'] >= 60:
+        print("⚠️ Grok minute limit reached")
         return False
     
     # Enforce minimum delay between requests
-    time_since_last = current_time - ollama_rate_limiter['last_request_time']
+    time_since_last = current_time - grok_rate_limiter['last_request_time']
     if time_since_last < 0.1:
         wait_time = 0.1 - time_since_last
         time.sleep(wait_time)
     
     return True
 
-def increment_ollama_counter():
+def increment_grok_counter():
     """Increment rate limit counters after successful request"""
-    ollama_rate_limiter['request_count_minute'] += 1
-    ollama_rate_limiter['request_count_day'] += 1
-    ollama_rate_limiter['last_request_time'] = time.time()
-    print(f"📊 Ollama usage: {ollama_rate_limiter['request_count_minute']}/60 this minute, {ollama_rate_limiter['request_count_day']}/10000 today")
-def call_ollama_api(prompt, max_tokens=1000, temperature=0.7):
+    grok_rate_limiter['request_count_minute'] += 1
+    grok_rate_limiter['request_count_day'] += 1
+    grok_rate_limiter['last_request_time'] = time.time()
+    print(f"📊 Grok usage: {grok_rate_limiter['request_count_minute']}/60 this minute, {grok_rate_limiter['request_count_day']}/10000 today")
+def call_Grok_api(prompt, max_tokens=1000, temperature=0.7):
     """Call LLM API with OpenAI-compatible format"""
-    if not ollama_client:
+    if not grok_client:
         return None
     
     try:
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {ollama_client['api_key']}"
+            "Authorization": f"Bearer {grok_client['api_key']}"
         }
         
         # OpenAI-compatible chat completion format
         payload = {
-            "model": ollama_client['model'],
+            "model": grok_client['model'],
             "messages": [
                 {
                     "role": "user",
@@ -217,10 +217,10 @@ def call_ollama_api(prompt, max_tokens=1000, temperature=0.7):
             "stream": False
         }
         
-        print(f"🔄 Calling LLM API: {ollama_client['api_url']}")
+        print(f"🔄 Calling LLM API: {grok_client['api_url']}")
         
         response = requests.post(
-            ollama_client['api_url'],
+            grok_client['api_url'],
             headers=headers,
             json=payload,
             timeout=60
@@ -257,7 +257,7 @@ def call_ollama_api(prompt, max_tokens=1000, temperature=0.7):
         
         elif response.status_code == 405:
             print(f"❌ 405 Method Not Allowed")
-            print(f"🔗 Endpoint: {ollama_client['api_url']}")
+            print(f"🔗 Endpoint: {grok_client['api_url']}")
             print(f"💡 Check if the endpoint URL is correct")
             return None
         
@@ -286,12 +286,12 @@ def call_ollama_api(prompt, max_tokens=1000, temperature=0.7):
     except Exception as e:
         print(f"❌ LLM API call failed: {e}")
         return None
-def generate_with_retrieved_context(user_query, retrieved_contexts, use_ollama=True):
+def generate_with_retrieved_context(user_query, retrieved_contexts, use_Grok=True):
     """
     🧠 GENERATION PHASE - Synthesize retrieved knowledge into natural response
-    This is where RAG's 'G' happens using Ollama LLM
+    This is where RAG's 'G' happens using Grok LLM
     """
-    if not use_ollama or not ollama_client or not check_ollama_rate_limit():
+    if not use_Grok or not grok_client or not check_grok_rate_limit():
         return generate_fallback_with_context(user_query, retrieved_contexts)
     
     # Prepare context from retrieved documents
@@ -316,23 +316,23 @@ def generate_with_retrieved_context(user_query, retrieved_contexts, use_ollama=T
 Respond naturally as if having a caring conversation (400-600 words):"""
 
     try:
-        response_text = call_ollama_api(prompt, max_tokens=800, temperature=0.7)
-        increment_ollama_counter()
+        response_text = call_Grok_api(prompt, max_tokens=800, temperature=0.7)
+        increment_grok_counter()
         
         if response_text:
             return {
                 'answer': response_text,
-                'generation_method': 'ollama_synthesis',
+                'generation_method': 'Grok_synthesis',
                 'context_used': len(retrieved_contexts)
             }
     except Exception as e:
-        print(f"⚠️ Ollama generation failed: {e}")
+        print(f"⚠️ Grok generation failed: {e}")
     
     return generate_fallback_with_context(user_query, retrieved_contexts)
 
 
 def generate_fallback_with_context(user_query, retrieved_contexts):
-    """Fallback generation when Ollama unavailable"""
+    """Fallback generation when Grok unavailable"""
     if not retrieved_contexts:
         return {
             'answer': "I'm having trouble accessing relevant information right now. For mental health support, please contact 988.",
@@ -367,7 +367,7 @@ model_load_time = None
 # Professional Mental Health Response Generator
 class ProfessionalMentalHealthResponses:
     def __init__(self):
-        self.use_ollama = ollama_client is not None
+        self.use_grok = grok_client is not None
         self.fallback_responses = {
             'anxiety': {
                 'response': """I understand you're experiencing anxiety, and I want you to know that what you're feeling is valid and treatable. Anxiety affects millions of people, and there are proven ways to manage it.
@@ -421,11 +421,11 @@ If stress affects sleep, eating, or relationships consistently, consider speakin
             }
         }
     
-    def get_professional_response_with_ollama(self, user_input):
-        """Enhanced professional response using Ollama API"""
+    def get_professional_response_with_grok(self, user_input):
+        """Enhanced professional response using Grok API"""
         
-        if not check_ollama_rate_limit():
-            print("⚠️ Ollama rate limit hit - using fallback")
+        if not check_grok_rate_limit():
+            print("⚠️ Grok rate limit hit - using fallback")
             return self._get_fallback_response(user_input)
         
         try:
@@ -440,18 +440,18 @@ Include:
 
 Use markdown with ## headers and bullet points. Keep under 800 words."""
 
-            response_text = call_ollama_api(prompt, max_tokens=1000, temperature=0.7)
+            response_text = call_Grok_api(prompt, max_tokens=1000, temperature=0.7)
             
-            increment_ollama_counter()
+            increment_grok_counter()
             
             if response_text:
                 return {
-                    'answer': response_text + "\n\n---\n*✨ Enhanced by Ollama Llama 3.2 Vision • For personalized care, please consult a licensed mental health professional.*",
+                    'answer': response_text + "\n\n---\n*✨ Enhanced by Grok Llama 3.2 Vision • For personalized care, please consult a licensed mental health professional.*",
                     'sources': [{
                         'title': f'Professional Clinical Guidance ({LLM_MODEL_NAME})',
                         'url': 'https://www.apa.org/topics',
                         'snippet': f'Evidence-based mental health information powered by {LLM_MODEL_NAME}',
-                        'displayUrl': 'Ollama AI Professional',
+                        'displayUrl': 'Grok AI Professional',
                         'source_id': 1,
                         'favicon': 'https://www.google.com/s2/favicons?domain=apa.org',
                         'published_date': datetime.now().strftime('%Y-%m-%d'),
@@ -464,11 +464,11 @@ Use markdown with ## headers and bullet points. Keep under 800 words."""
                 return self._get_fallback_response(user_input)
                 
         except Exception as e:
-            print(f"❌ Ollama error: {e}")
+            print(f"❌ Grok error: {e}")
             return self._get_fallback_response(user_input)
     
     def _get_fallback_response(self, user_input):
-        """Fallback response when Ollama is unavailable"""
+        """Fallback response when Grok is unavailable"""
         user_lower = user_input.lower()
         
         if any(word in user_lower for word in ['anxious', 'anxiety', 'panic', 'worry']):
@@ -499,11 +499,11 @@ Use markdown with ## headers and bullet points. Keep under 800 words."""
             'confidence': 0.85
         }
     
-    def get_professional_response(self, user_input):
-        """Main entry point - tries Ollama first"""
-        if self.use_ollama:
-            print("🤖 Using Ollama API for professional response...")
-            return self.get_professional_response_with_ollama(user_input)
+    def get_professional_response(self, user_input):  # ✅ Added 4 spaces indentation
+        """Main entry point - tries Grok first"""
+        if self.use_grok:  
+            print("🤖 Using Grok API for professional response...")
+            return self.get_professional_response_with_grok(user_input)
         else:
             print("📚 Using pre-written professional responses...")
             return self._get_fallback_response(user_input)
@@ -846,7 +846,7 @@ Dr. Chen:"""
 # Knowledge Base with Expert Information
 class ExpertKnowledgeBase:
     def __init__(self):
-        self.use_ollama = ollama_client is not None  # CHANGED
+        self.use_grok = grok_client is not None  # CHANGED
         self.fallback_knowledge = {
     'content': """**Evidence-Based Therapeutic Approaches:**
 
@@ -869,11 +869,11 @@ The best approach depends on your specific concerns and preferences.""",
     ]
 }
     
-    def search_knowledge_with_ollama(self, query):  # RENAMED
-        """Enhanced knowledge using Ollama API"""  # CHANGED
+    def search_knowledge_with_grok(self, query):  # RENAMED
+        """Enhanced knowledge using Grok API"""  # CHANGED
         
-        if not check_ollama_rate_limit():  # CHANGED
-            print("⚠️ Ollama rate limit hit - using fallback knowledge")  # CHANGED
+        if not check_grok_rate_limit():  # CHANGED
+            print("⚠️ Grok rate limit hit - using fallback knowledge")  # CHANGED
             return self._get_fallback_knowledge(query)
         
         try:
@@ -888,19 +888,19 @@ Include:
 
 Use markdown with ## headers and bullets. Keep under 700 words."""
 
-            response_text = call_ollama_api(prompt, max_tokens=900, temperature=0.7)  # CHANGED
+            response_text = call_Grok_api(prompt, max_tokens=900, temperature=0.7)  # CHANGED
             
-            increment_ollama_counter()  # CHANGED
+            increment_grok_counter()  # CHANGED
             
             if response_text:  # CHANGED
                 return {
-                    'answer': response_text + "\n\n---\n*✨ Enhanced by Ollama AI • Expert knowledge from evidence-based research.*",  # CHANGED
+                    'answer': response_text + "\n\n---\n*✨ Enhanced by Grok AI • Expert knowledge from evidence-based research.*",  # CHANGED
                     'sources': [
                         {
                             'title': f'Expert Knowledge Base ({LLM_MODEL_NAME})',  # CHANGED
                             'url': 'https://www.nimh.nih.gov',
                             'snippet': f'AI-curated expert knowledge powered by {LLM_MODEL_NAME}',
-                            'displayUrl': 'Ollama Expert AI',  # CHANGED
+                            'displayUrl': 'Grok Expert AI',  # CHANGED
                             'source_id': 1,
                             'favicon': 'https://www.google.com/s2/favicons?domain=nimh.nih.gov',
                             'published_date': datetime.now().strftime('%Y-%m-%d'),
@@ -914,7 +914,7 @@ Use markdown with ## headers and bullets. Keep under 700 words."""
                 return self._get_fallback_knowledge(query)
                 
         except Exception as e:
-            print(f"❌ Ollama error: {e}")  # CHANGED
+            print(f"❌ Grok error: {e}")  # CHANGED
             return self._get_fallback_knowledge(query)
     
     def _get_fallback_knowledge(self, query):
@@ -935,17 +935,16 @@ Use markdown with ## headers and bullets. Keep under 700 words."""
             } for i, source in enumerate(data['sources'])],
             'type': 'expert_knowledge',
             'confidence': 0.8
-        }   
-    
-    def search_knowledge(self, query):
-        """Main entry point - tries Ollama first"""  # CHANGED
-        if self.use_ollama:  # CHANGED
-            print("🤖 Using Ollama API for expert knowledge...")  # CHANGED
-            return self.search_knowledge_with_ollama(query)  # CHANGED
-        else:
-            print("📚 Using pre-written expert knowledge...")
-            return self._get_fallback_knowledge(query)
-        
+        }
+        def search_knowledge(self, query):  
+            """Main entry point - tries Grok first"""
+            if self.use_grok:
+                print("🤖 Using Grok API for expert knowledge...")
+                return self.search_knowledge_with_grok(query)
+            else:
+                print("📚 Using pre-written expert knowledge...")
+                return self._get_fallback_knowledge(query)   
+            
 def initialize_model():
     """Initialize model with comprehensive error handling"""
     global model, tokenizer, use_adapter, model_load_time
@@ -1075,13 +1074,13 @@ def generate_rag_response(user_input, use_web_augmentation=True):
             print(f"✅ High confidence ({confidence:.2f}) - skipping web search")
         
         # ============================================
-        # PHASE 4: GENERATE ANSWER WITH OLLAMA
+        # PHASE 4: GENERATE ANSWER WITH Grok
         # ============================================
         # Use top 2 CSV for generation (web is just supplementary sources)
         generated = generate_with_retrieved_context(
             user_input, 
             top_2_csv,
-            use_ollama=True
+            use_Grok=True
         )
         
         # ============================================
@@ -1131,7 +1130,7 @@ def generate_rag_response(user_input, use_web_augmentation=True):
         final_answer = generated['answer']
         
 # Add metadata footer with CSV source details
-        if generated['generation_method'] == 'ollama_synthesis':
+        if generated['generation_method'] == 'Grok_synthesis':
             csv_names = []
             for src in top_2_csv:
                 source_file = src.get('source_file', 'unknown')
@@ -2115,29 +2114,29 @@ def health():
         "tokenizer_loaded": tokenizer is not None,
         "adapter_loaded": use_adapter,
         "device": str(device),
-        "ollama_status": {  # CHANGED from gemini_status
-            "enabled": ollama_client is not None,  # CHANGED
+        "Grok_status": {  # CHANGED from gemini_status
+            "enabled": grok_client is not None,  # CHANGED
             "model": LLM_MODEL_NAME,
   # NEW
-            "api_url": LLM_API_URL if ollama_client else None,  # NEW
-            "used_today": ollama_rate_limiter['request_count_day'],  # CHANGED
-            "used_this_minute": ollama_rate_limiter['request_count_minute'],  # CHANGED
-            "remaining_today": 10000 - ollama_rate_limiter['request_count_day'],  # CHANGED limits
-            "remaining_minute": 60 - ollama_rate_limiter['request_count_minute']  # CHANGED limits
+            "api_url": LLM_API_URL if grok_client else None,  # NEW
+            "used_today": grok_rate_limiter['request_count_day'],  # CHANGED
+            "used_this_minute": grok_rate_limiter['request_count_minute'],  # CHANGED
+            "remaining_today": 10000 - grok_rate_limiter['request_count_day'],  # CHANGED limits
+            "remaining_minute": 60 - grok_rate_limiter['request_count_minute']  # CHANGED limits
         },
         "features": {
             "training_model": "✅ Available",
-            "professional_responses": f"✅ {LLM_MODEL_NAME}" if ollama_client else "✅ Fallback",
+            "professional_responses": f"✅ {LLM_MODEL_NAME}" if grok_client else "✅ Fallback",
   # CHANGED
             "web_search": "✅ Available",
-            "agentic_rag": f"✅ {LLM_MODEL_NAME}" if ollama_client else "✅ Fallback",
+            "agentic_rag": f"✅ {LLM_MODEL_NAME}" if grok_client else "✅ Fallback",
   # CHANGED
             "mixed_analysis": "✅ Available"
         },
         "timestamp": datetime.now().isoformat()
     })
 if __name__ == "__main__":
-    print("🤖 NISRA - OLLAMA-ENHANCED VERSION")  # CHANGED
+    print("🤖 NISRA - Grok-ENHANCED VERSION")  # CHANGED
     print("=" * 80)
     print(f"🤖 Model Status: {'✅ Loaded & Cached' if model_loaded else '❌ Using fallbacks'}")
     print(f"🔗 Adapter Status: {'✅ Loaded' if use_adapter else '❌ Base model only'}")
@@ -2159,11 +2158,11 @@ if __name__ == "__main__":
     print("   • Repeat queries: <0.5s (response cached)")
     print("=" * 80)
     print("🌐 Server starting at: http://127.0.0.1:5000/")
-    print(f"🔮 Ollama API: {'✅ ACTIVE' if ollama_client else '⚠️ Not configured'}")  # CHANGED
-    if ollama_client:  # CHANGED
+    print(f"🔮 Grok API: {'✅ ACTIVE' if grok_client else '⚠️ Not configured'}")  # CHANGED
+    if grok_client:  # CHANGED
         print(f"   📊 Model: {LLM_MODEL_NAME}")
   # NEW
         print(f"   🔗 API URL: {LLM_API_URL}")  # NEW
-    print("💙 Ready to provide AMAZING mental health support with Ollama!")  # CHANGED
+    print("💙 Ready to provide AMAZING mental health support with Grok!")  # CHANGED
     
     app.run(debug=True, host='127.0.0.1', port=5000, threaded=True, use_reloader=False)
