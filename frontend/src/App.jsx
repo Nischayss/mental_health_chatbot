@@ -7,7 +7,7 @@ import Resources from './Resources';
 import GamesHub from './GamesHub';
 import Exercise from './Exercise.jsx';
 import Sidebar from './components/ui/Sidebar';
-import { Search, Paperclip, Mic, Send, Moon, Sun, Heart, X, Bookmark, Pin, MessageSquare, Trash2, History } from 'lucide-react';
+import { Search, Paperclip, Mic, Send, Moon, Sun, Heart, X, Bookmark, Pin, MessageSquare, Trash2, History, AlertTriangle } from 'lucide-react';
 import CrisisModal from './components/CrisisModal';
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -29,6 +29,7 @@ const scrollbarStyles = `
 `;
 
 function App() {
+  const [showCrisisBanner, setShowCrisisBanner] = useState(false);
   const messagesEndRef = useRef(null);
   const [showCrisisModal, setShowCrisisModal] = useState(false);
   const [crisisData, setCrisisData] = useState(null);
@@ -161,15 +162,15 @@ function App() {
     }
   };
 
- const sendMessage = async () => {
+const sendMessage = async () => {
   if (!input.trim() || loading) return;
 
   const userMsg = { role: 'user', content: input };
-  const currentInput = input; // Save input before clearing
+  const currentInput = input;
   setInput('');
   setLoading(true);
 
-  // ✅ FIX: Create chat ID BEFORE first message if it doesn't exist
+  // ✅ Create chat ID BEFORE first message if it doesn't exist
   if (!activeChatId && messages.length === 0) {
     const newChatId = Date.now();
     setActiveChatId(newChatId);
@@ -187,20 +188,23 @@ function App() {
 
     const responseData = response.data.response;
     
-    // CHECK FOR CRISIS RESPONSE
-    if (responseData.type === 'crisis_intervention') {
-      console.log('🚨 Crisis detected!');
+    // ✅ NEW: CHECK FOR CRISIS FLAG IN ANY RESPONSE
+    if (responseData.crisis_detected) {
+      console.log('🚨 Crisis detected!', responseData);
       setCrisisData({
-        guardianAlerted: responseData.guardian_alerted,
-        crisisLevel: responseData.crisis_level
+        guardianAlerted: responseData.guardian_alerted || false,
+        crisisLevel: responseData.crisis_level || 'unknown'
       });
       setShowCrisisModal(true);
+      setShowCrisisBanner(true);  // ✅ NEW
+
     }
 
     const aiMsg = {
       role: 'assistant',
       content: responseData.answer,
-      sources: responseData.sources || []
+      sources: responseData.sources || [],
+      crisisDetected: responseData.crisis_detected || false  // ✅ NEW: Track in message
     };
     
     setMessages(prev => {
@@ -220,7 +224,6 @@ function App() {
     setLoading(false);
   }
 };
-
   const saveMessage = (message) => {
     if (!currentUser) return;
     const userKey = `nisra_saved_${currentUser.email}`;
@@ -317,16 +320,19 @@ const togglePinChat = (chatId) => {
   if (!isAuthenticated) {
     return <Auth onLogin={handleLogin} />;
   }
-  {showCrisisModal && (
-  <CrisisModal
-    onClose={() => setShowCrisisModal(false)}
-    guardianAlerted={crisisData?.guardianAlerted}
-  />
-)}
+ 
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0b0f] text-gray-900 dark:text-white flex transition-colors">
       <style>{scrollbarStyles}</style>
+
+      {showCrisisModal && (
+        <CrisisModal
+          onClose={() => setShowCrisisModal(false)}
+          guardianAlerted={crisisData?.guardianAlerted}
+          crisisLevel={crisisData?.crisisLevel}
+        />
+      )}
 
       <Sidebar
         sidebarCollapsed={sidebarCollapsed}
@@ -357,6 +363,23 @@ const togglePinChat = (chatId) => {
             </button>
           </div>
         </header>
+                {showCrisisBanner && (
+          <div className="bg-red-500 text-white px-6 py-4 flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6" />
+              <div>
+                <p className="font-bold">Crisis Detected</p>
+                <p className="text-sm">Please reach out for immediate help: 988 (US) | 1800-599-0019 (India)</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowCrisisBanner(false)}
+              className="p-2 hover:bg-red-600 rounded-lg transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
 
         {messages.length === 0 ? (
           <div className="flex-1 flex items-center justify-center p-8 bg-gray-50 dark:bg-[#0a0b0f]">
@@ -427,8 +450,14 @@ const togglePinChat = (chatId) => {
         ) : (
           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-[#0a0b0f]" style={{ maxHeight: 'calc(100vh - 240px)' }}>
             {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[70%] ${msg.role === 'user' ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white' : 'bg-white dark:bg-[#16181f] text-gray-900 dark:text-white border-2 border-gray-400 dark:border-gray-600'} rounded-2xl px-5 py-3 shadow-lg`}>
+                <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[70%] ${
+                    msg.role === 'user' 
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white' 
+                      : msg.crisisDetected  // ✅ NEW: Red border for crisis
+                      ? 'bg-red-50 dark:bg-red-900/20 text-gray-900 dark:text-white border-2 border-red-500'
+                      : 'bg-white dark:bg-[#16181f] text-gray-900 dark:text-white border-2 border-gray-400 dark:border-gray-600'
+                  } rounded-2xl px-5 py-3 shadow-lg`}>
                   <div className="flex items-start justify-between gap-2">
                     <p className="whitespace-pre-wrap flex-1">{msg.content}</p>
                     {msg.role === 'assistant' && (

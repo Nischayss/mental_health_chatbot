@@ -22,7 +22,7 @@ from pathlib import Path
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import secrets
+import secrets 
 from datetime import datetime, timedelta
 
 warnings.filterwarnings("ignore")
@@ -2281,12 +2281,11 @@ def chat():
 
         print(f"🤖 Processing: {user_message} | Type: {response_type} | User: {email or 'anonymous'}")
         
-        # IMPROVED GREETING DETECTION
+        # ✅ IMPROVED GREETING DETECTION
         def is_greeting_only(message):
             """Check if message is ONLY a greeting with no actual question"""
             msg_lower = message.lower().strip()
             
-            # Pure greetings
             pure_greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 
                              'good evening', 'how are you', 'whats up', "what's up", 
                              'howdy', 'greetings', 'yo']
@@ -2294,7 +2293,6 @@ def chat():
             if msg_lower in pure_greetings:
                 return True
             
-            # If message is longer than 15 chars, probably not just greeting
             if len(message.strip()) > 15:
                 return False
             
@@ -2317,14 +2315,38 @@ def chat():
             }
             return jsonify({"response": response})
         
-        # SUICIDE RISK DETECTION
+        # ✅ NEW: SUICIDE RISK DETECTION (ALWAYS RUN, NEVER BYPASS)
         risk_level, trigger_word = detect_suicide_risk(user_message)
         
-        if risk_level in ['high', 'medium']:
-            # ... keep existing crisis code ...
-            pass
+        crisis_detected = False
+        guardian_alerted = False
         
-        # MAIN RESPONSE ROUTING
+        if risk_level in ['high', 'medium']:
+            crisis_detected = True
+            print(f"🚨 CRISIS DETECTED: {risk_level} risk - Trigger: '{trigger_word}'")
+            
+            # ✅ Send guardian alert if configured
+            if email:
+                try:
+                    users = load_users()
+                    if email in users:
+                        user = users[email]
+                        guardian_phone = user.get('guardian_phone')
+                        user_name = user.get('name', 'User')
+                        
+                        if guardian_phone:
+                            sms_sent = send_guardian_alert_sms(guardian_phone, user_name)
+                            
+                            guardian_email = user.get('guardian_email')
+                            if guardian_email:
+                                email_sent = send_guardian_alert_email(guardian_email, user_name, user_message)
+                            
+                            guardian_alerted = sms_sent or email_sent
+                            print(f"📱 Guardian alert {'SENT' if guardian_alerted else 'FAILED'}")
+                except Exception as e:
+                    print(f"⚠️ Guardian alert error: {e}")
+        
+        # ✅ MAIN RESPONSE ROUTING (ALWAYS GENERATE)
         response = None
         
         if response_type == "training":
@@ -2348,10 +2370,32 @@ def chat():
                 'confidence': 0.0
             }
         
+        # ✅ NEW: APPEND CRISIS MESSAGE IF DETECTED
+        if crisis_detected:
+            crisis_footer = f"\n\n---\n\n🚨 **CRISIS SUPPORT RESOURCES**\n\n"
+            crisis_footer += f"I noticed you mentioned '{trigger_word}' which suggests you may be in distress. Your safety is the priority.\n\n"
+            crisis_footer += f"**🆘 IMMEDIATE HELP:**\n"
+            crisis_footer += f"• **988** - Suicide & Crisis Lifeline (US) - Call or Text\n"
+            crisis_footer += f"• **911** - Emergency Services (US)\n"
+            crisis_footer += f"• **1800-599-0019** - KIRAN Mental Health Helpline (India)\n"
+            crisis_footer += f"• **108** - Emergency Services (India)\n\n"
+            
+            if guardian_alerted:
+                crisis_footer += f"✅ **Your guardian has been notified and may reach out to you.**\n\n"
+            
+            crisis_footer += f"You don't have to face this alone. Professional help is available 24/7. 💙"
+            
+            response['answer'] = response['answer'] + crisis_footer
+            response['crisis_detected'] = True
+            response['crisis_level'] = risk_level
+            response['guardian_alerted'] = guardian_alerted
+        
         return jsonify({"response": response})
         
     except Exception as e:
         print(f"❌ Error in chat endpoint: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "error": "Internal server error",
             "response": {
