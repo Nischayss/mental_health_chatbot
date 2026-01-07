@@ -119,6 +119,8 @@ TWILIO_PHONE = os.environ.get("TWILIO_PHONE", "")
 
 reset_codes = {}  
 
+delete_verification_codes = {}
+
 BASE_MODEL_PATH = os.environ.get("MODEL_BASE_PATH", "./TinyLlama-1.1B-Chat-v1.0")
 ADAPTER_PATH = os.environ.get("ADAPTER_PATH", "./trained_model")
 
@@ -436,7 +438,7 @@ Include:
 2. Evidence-based information
 3. Practical coping strategies
 4. Treatment recommendations if appropriate
-5. Crisis resources if relevant (988, 911)
+5. Crisis resources if relevant (988, 911/108)
 
 Use markdown with ## headers and bullet points. Keep under 800 words."""
 
@@ -1644,6 +1646,113 @@ def send_verification_email(email, code):
         print(f"❌ Verification email error: {e}")
         return False
 
+def send_deletion_verification_email(email, code, user_name):
+    """Send verification code for account deletion"""
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        print(f"📧 Dev Mode - Deletion code for {email}: {code}")
+        return True
+    
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = SMTP_EMAIL
+        msg['To'] = email
+        msg['Subject'] = "⚠️ NISRA - Account Deletion Request"
+        
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 20px; border-radius: 10px 10px 0 0; text-align: center; margin: -30px -30px 30px -30px;">
+                    <h1 style="color: white; margin: 0;">⚠️ Account Deletion Request</h1>
+                </div>
+                
+                <p style="color: #333; font-size: 16px;">Hi {user_name},</p>
+                
+                <p style="color: #666; line-height: 1.6;">
+                    We received a request to <strong>permanently delete</strong> your NISRA account.
+                </p>
+                
+                <div style="background: #fee; border-left: 4px solid #f00; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                    <p style="color: #c00; margin: 0; font-size: 14px;">
+                        ⚠️ <strong>This action is irreversible!</strong><br>
+                        All your data will be permanently deleted.
+                    </p>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 25px; border-radius: 12px; text-align: center; margin: 30px 0;">
+                    <p style="color: rgba(255,255,255,0.9); margin: 0 0 10px 0; font-size: 14px;">Deletion Verification Code</p>
+                    <p style="font-size: 42px; font-weight: bold; color: white; margin: 0; letter-spacing: 10px;">{code}</p>
+                </div>
+                
+                <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                    <p style="color: #856404; margin: 0; font-size: 14px;">
+                        ⏰ <strong>This code expires in 10 minutes.</strong>
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        
+        print(f"✅ Deletion verification email sent to {email}")
+        return True
+    except Exception as e:
+        print(f"❌ Deletion email error: {e}")
+        return False
+
+
+def send_deletion_confirmation_email(email, user_name):
+    """Send confirmation that account was deleted"""
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        return True
+    
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = SMTP_EMAIL
+        msg['To'] = email
+        msg['Subject'] = "NISRA - Account Deleted Successfully"
+        
+        body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px;">
+                <h2 style="color: #333;">Account Deleted Successfully</h2>
+                <p style="color: #666;">Hi {user_name},</p>
+                <p style="color: #666;">Your NISRA account has been permanently deleted.</p>
+                
+                <div style="margin-top: 30px;">
+                    <h3 style="color: #333;">Crisis Resources (Always Available):</h3>
+                    <ul style="color: #666;">
+                        <li><strong>988 Suicide & Crisis Lifeline</strong> (US)</li>
+                        <li><strong>KIRAN</strong> (India) - 1800-599-0019</li>
+                    </ul>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        
+        print(f"✅ Deletion confirmation sent to {email}")
+        return True
+    except Exception as e:
+        print(f"❌ Confirmation email error: {e}")
+        return False
 
 @app.route("/auth/check-email", methods=["POST"])
 def check_email():
@@ -1827,6 +1936,123 @@ def reset_password():
     except Exception as e:
         print(f"Reset password error: {e}")
         return jsonify({"error": "Password reset failed"}), 500
+    
+@app.route("/auth/request-delete", methods=["POST"])
+def request_account_deletion():
+    """Send verification code for account deletion"""
+    try:
+        data = request.json
+        email = data.get("email", "").strip().lower()
+        password = data.get("password", "")
+        
+        if not email or not password:
+            return jsonify({"error": "Email and password required"}), 400
+        
+        users = load_users()
+        
+        if email not in users:
+            return jsonify({"error": "User not found"}), 404
+        
+        # Verify password
+        if not check_password_hash(users[email]["password"], password):
+            return jsonify({"error": "Invalid password"}), 401
+        
+        # Generate 6-digit verification code
+        code = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+        
+        # Store code with expiration
+        delete_verification_codes[email] = {
+            'code': code,
+            'expires': datetime.now() + timedelta(minutes=10),
+            'attempts': 0
+        }
+        
+        # Send deletion verification email
+        success = send_deletion_verification_email(email, code, users[email].get('name', 'User'))
+        
+        if not success and SMTP_EMAIL:
+            return jsonify({"error": "Failed to send verification email"}), 500
+        
+        return jsonify({
+            "success": True,
+            "message": "Verification code sent to your email",
+            "dev_code": code if not SMTP_EMAIL else None
+        })
+        
+    except Exception as e:
+        print(f"Request delete error: {e}")
+        return jsonify({"error": "Failed to initiate account deletion"}), 500
+
+
+@app.route("/auth/confirm-delete", methods=["POST"])
+def confirm_account_deletion():
+    """Verify code and permanently delete account"""
+    try:
+        data = request.json
+        email = data.get("email", "").strip().lower()
+        code = data.get("code", "").strip()
+        
+        if not email or not code:
+            return jsonify({"error": "Email and verification code required"}), 400
+        
+        # Check if code exists
+        if email not in delete_verification_codes:
+            return jsonify({"error": "Invalid or expired verification code"}), 400
+        
+        stored_data = delete_verification_codes[email]
+        
+        # Check expiration
+        if datetime.now() > stored_data['expires']:
+            del delete_verification_codes[email]
+            return jsonify({"error": "Verification code expired"}), 400
+        
+        # Check attempts
+        if stored_data['attempts'] >= 5:
+            del delete_verification_codes[email]
+            return jsonify({"error": "Too many incorrect attempts"}), 429
+        
+        # Verify code
+        if stored_data['code'] != code:
+            delete_verification_codes[email]['attempts'] += 1
+            remaining = 5 - delete_verification_codes[email]['attempts']
+            return jsonify({
+                "error": f"Invalid code. {remaining} attempts remaining."
+            }), 400
+        
+        # Delete user data
+        users = load_users()
+        
+        if email not in users:
+            return jsonify({"error": "User not found"}), 404
+        
+        user_name = users[email].get('name', 'User')
+        
+        # Delete user from database
+        del users[email]
+        save_users(users)
+        
+        # Delete user's chat history
+        chat_file = get_user_chat_file(email)
+        if chat_file.exists():
+            chat_file.unlink()
+        
+        # Clear verification code
+        del delete_verification_codes[email]
+        
+        # Clear session
+        session.pop('user_email', None)
+        
+        # Send confirmation email
+        send_deletion_confirmation_email(email, user_name)
+        
+        return jsonify({
+            "success": True,
+            "message": "Account deleted successfully"
+        })
+        
+    except Exception as e:
+        print(f"Confirm delete error: {e}")
+        return jsonify({"error": "Account deletion failed"}), 500
 
 @app.route("/crisis/alert", methods=["POST"])
 def send_crisis_alert():
@@ -2040,7 +2266,7 @@ def save_chat():
     
     save_user_chat(email, chat_data)
     return jsonify({"success": True})
-# NEW: Updated chat endpoint with RAG mode
+
 @app.route("/chat", methods=["POST"])
 def chat():
     try:
@@ -2055,19 +2281,50 @@ def chat():
 
         print(f"🤖 Processing: {user_message} | Type: {response_type} | User: {email or 'anonymous'}")
         
-        # SUICIDE RISK DETECTION (keep existing code)
+        # IMPROVED GREETING DETECTION
+        def is_greeting_only(message):
+            """Check if message is ONLY a greeting with no actual question"""
+            msg_lower = message.lower().strip()
+            
+            # Pure greetings
+            pure_greetings = ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 
+                             'good evening', 'how are you', 'whats up', "what's up", 
+                             'howdy', 'greetings', 'yo']
+            
+            if msg_lower in pure_greetings:
+                return True
+            
+            # If message is longer than 15 chars, probably not just greeting
+            if len(message.strip()) > 15:
+                return False
+            
+            return False
+
+        # HANDLE PURE GREETINGS
+        if is_greeting_only(user_message):
+            response = {
+                'answer': f"Hello! 👋 I'm NISRA, your mental health support assistant.\n\nHow can I help you today?\n\n**You can ask me about:**\n• Coping strategies\n• Or anything else on your mind\n\nI'm here to listen and support you. 💙",
+                'sources': [{
+                    'title': '👋 Greeting',
+                    'url': '#greeting',
+                    'snippet': 'Natural conversation greeting',
+                    'displayUrl': 'NISRA Assistant',
+                    'source_id': 1,
+                    'type': 'greeting'
+                }],
+                'type': 'greeting',
+                'confidence': 1.0
+            }
+            return jsonify({"response": response})
+        
+        # SUICIDE RISK DETECTION
         risk_level, trigger_word = detect_suicide_risk(user_message)
         
         if risk_level in ['high', 'medium']:
-            # ... existing crisis code ...
+            # ... keep existing crisis code ...
             pass
         
-        # GREETING (keep existing code)
-        if user_message.lower().strip() in ['hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening', 'how are you']:
-            # ... existing greeting code ...
-            pass
-        
-        # MAIN RESPONSE ROUTING (UPDATED)
+        # MAIN RESPONSE ROUTING
         response = None
         
         if response_type == "training":
@@ -2076,10 +2333,10 @@ def chat():
             response = generate_professional_response(user_message)
         elif response_type == "web":
             response = generate_web_response(user_message)
-        elif response_type == "rag":  # NEW MODE!
+        elif response_type == "rag":
             response = generate_rag_response(user_message, use_web_augmentation=True)
         elif response_type == "mix":
-            response = generate_mixed_response(user_message)  # NEW - optimized version!
+            response = generate_mixed_response(user_message)
         else:
             response = generate_professional_response(user_message)
         

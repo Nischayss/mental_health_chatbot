@@ -374,15 +374,12 @@ const togglePinChat = (chatId) => {
 
               <div className="space-y-4">
                 <div className="flex items-center gap-3 bg-white dark:bg-[#16181f] rounded-2xl p-2 max-w-2xl mx-auto border-2 border-gray-400 dark:border-gray-600 shadow-lg">
-                  <button className="p-3 hover:bg-gray-100 dark:hover:bg-[#0a0b0f] rounded-lg transition">
-                    <Paperclip className="w-5 h-5 text-gray-500" />
-                  </button>
                   <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                    placeholder="Message AI Chat..."
+                    placeholder="    Message AI Chat..."
                     className="flex-1 bg-transparent py-2 outline-none placeholder-gray-500 text-gray-900 dark:text-white"
                     disabled={loading}
                   />

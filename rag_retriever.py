@@ -299,9 +299,33 @@ class MultiFileRAGRetriever:
     # ========================================================================
     
     def _is_greeting(self, query):
+        """
+        Detect if query is ONLY a greeting (not greeting + mental health concern)
+        """
         query_lower = query.lower().strip()
         query_clean = query_lower.rstrip('!?.,:;')
         
+        # ✅ CRITICAL: Check for mental health keywords FIRST
+        mental_health_keywords = {
+            'feel', 'feeling', 'felt', 'anxiety', 'anxious', 'stress', 'stressed',
+            'depressed', 'depression', 'sad', 'upset', 'angry', 'frustrated',
+            'worried', 'worry', 'concern', 'help', 'problem', 'issue',
+            'presentation', 'exam', 'test', 'school', 'work', 'job',
+            'relationship', 'family', 'friend', 'lonely', 'alone',
+            'scared', 'afraid', 'fear', 'panic', 'overwhelmed', 'tired',
+            'sleep', 'insomnia', 'suicide', 'self-harm', 'hurt', 'pain',
+            'therapy', 'counseling', 'medication', 'diagnosis', 'low', 'down'
+        }
+        
+        # If contains ANY mental health keyword → NOT a greeting
+        if any(keyword in query_lower for keyword in mental_health_keywords):
+            return False
+        
+        # If longer than 25 chars → probably not just greeting
+        if len(query_clean) > 25:
+            return False
+        
+        # Now check if it's a pure greeting
         simple_greetings = {
             'hi', 'hello', 'hey', 'hiya', 'howdy', 'yo', 'sup', 
             'wassup', 'greetings', 'hola', 'namaste', 'hi there'
@@ -351,9 +375,7 @@ class MultiFileRAGRetriever:
         
         introductions = {
             "i'm new here", 'im new here', 'new here', 'first time here',
-            'first time', 'what can you do', 'what do you do',
-            'can you help me', 'can you help', 'i need help',
-            'i need someone to talk to', 'can we talk'
+            'first time', 'what can you do', 'what do you do'
         }
         
         all_greeting_phrases = (
@@ -362,13 +384,19 @@ class MultiFileRAGRetriever:
             system_questions | introductions
         )
         
+        # Exact match check
         if query_clean in all_greeting_phrases:
             return True
         
+        # Check if starts with greeting + has more content
         for phrase in all_greeting_phrases:
             if query_clean.startswith(phrase):
+                remaining = query_clean[len(phrase):].strip()
+                if len(remaining) > 10:  # Substantial text after greeting
+                    return False  # Not just a greeting
                 return True
         
+        # Short messages with greeting keywords
         word_count = len(query_clean.split())
         if word_count <= 3:
             greeting_keywords = {

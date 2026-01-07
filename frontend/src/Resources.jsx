@@ -16,7 +16,7 @@ export default function Resources({ onClose, currentUser }) {
       contact: '741741',
       message: 'HELLO',
       type: 'sms',
-      region: 'US',
+      region: 'India',
       icon: <Phone className="w-6 h-6" />
     },
     {
@@ -47,15 +47,15 @@ export default function Resources({ onClose, currentUser }) {
 
   const onlineResources = [
     {
-      name: 'National Institute of Mental Health (NIMH)',
+      name: 'NIMHANS (National Institute of Mental Health and Neurosciences)',
       description: 'Comprehensive mental health information and resources',
-      url: 'https://www.nimh.nih.gov',
+      url: 'https://nimhans.ac.in/',
       icon: <Globe className="w-6 h-6" />
     },
     {
-      name: 'Mental Health America',
-      description: 'Mental health screening tools and resources',
-      url: 'https://www.mhanational.org',
+      name: 'National Mental Health Program (NMHP) ',
+      description: 'National Health Mission, Ministry of Health & Family Welfare',
+      url: 'https://nhm.gov.in/index1.php?lang=1&level=2&sublinkid=1043&lid=359',
       icon: <Heart className="w-6 h-6" />
     },
     {
@@ -65,9 +65,9 @@ export default function Resources({ onClose, currentUser }) {
       icon: <Shield className="w-6 h-6" />
     },
     {
-      name: 'Psychology Today - Find a Therapist',
-      description: 'Directory of mental health professionals',
-      url: 'https://www.psychologytoday.com/us/therapists',
+      name: 'MPower (The Aditya Birla Education Trust)',
+      description: 'Mental health awareness, counseling, and community support',
+      url: 'https://www.mpowerminds.com/',
       icon: <Globe className="w-6 h-6" />
     }
   ];

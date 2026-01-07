@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Eye, EyeOff, ArrowLeft, Mail, Phone } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, Mail, Phone, Trash2 } from 'lucide-react';  
 import axios from 'axios';
+import DeleteAccountModal from './DeleteAccountModal';  
 
 const API_URL = 'http://127.0.0.1:5000';
 
@@ -15,7 +16,7 @@ export default function Auth({ onLogin }) {
   const [verificationCode, setVerificationCode] = useState('');
   const [emailToVerify, setEmailToVerify] = useState('');
   const [resendTimer, setResendTimer] = useState(0);
-
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -660,25 +661,27 @@ if (view === 'verify-email') {
             )}
 
             {view === 'login' && (
-              <div className="flex items-center justify-between pt-2">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="rememberMe"
-                    checked={formData.rememberMe}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                  />
-                  <span className="ml-2 text-sm text-gray-700">Remember me</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setView('forgot')}
-                  className="text-sm text-purple-600 hover:text-purple-700 font-medium"
-                >
-                  Forgot password?
-                </button>
-              </div>
+              <>
+                <div className="flex items-center justify-between pt-2">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="rememberMe"
+                      checked={formData.rememberMe}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Remember me</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setView('forgot')}
+                    className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              </>
             )}
 
             <button
@@ -690,7 +693,8 @@ if (view === 'verify-email') {
             </button>
           </form>
 
-          <p className={`text-center ${view === 'signup' ? 'mt-4' : 'mt-6'} text-sm text-gray-600`}>
+        <div className="text-center space-y-3">
+          <p className={`${view === 'signup' ? 'mt-4' : 'mt-6'} text-sm text-gray-600`}>
             {view === 'login' ? "Don't have an account? " : "Already have an account? "}
             <button
               onClick={() => {
@@ -703,8 +707,43 @@ if (view === 'verify-email') {
               {view === 'login' ? 'Sign Up' : 'Log In'}
             </button>
           </p>
+
+          {view === 'login' && (
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              className="flex items-center justify-center gap-2 mx-auto text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete Account</span>
+            </button>
+          )}
+        </div>
         </div>
       </div>
+            {/* ✅ ADD DELETE ACCOUNT MODAL */}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onDeleteSuccess={() => {
+          setShowDeleteModal(false);
+          localStorage.removeItem('nisra_user');
+          setSuccess('Account deleted successfully. You can create a new account anytime.');
+          setView('signup');
+          setFormData({
+            email: '',
+            password: '',
+            name: '',
+            gender: '',
+            guardianPhone: '',
+            yourPhone: '',
+            rememberMe: false,
+            newPassword: '',
+            confirmPassword: ''
+          });
+        }}
+      />
     </div>
   );
 }
+ 
